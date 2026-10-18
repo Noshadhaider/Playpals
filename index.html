@@ -30,18 +30,30 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 .tm{background:#ff4b3a;color:#fff;border-radius:999px;padding:4px 12px;font-weight:800}.ok{color:var(--lime);font-weight:800;text-align:center;margin:8px 0}
 .mut{color:var(--mut);font-size:14px}.log{font-size:14px;color:#bbb;min-height:20px}
 .ov{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:9}.pl{cursor:pointer}.sc div{cursor:pointer;display:flex;align-items:center;gap:5px}
+.ch{display:flex;flex-wrap:wrap;gap:8px}.ch button{border:2px solid transparent;border-radius:999px;background:#222;color:#fff;padding:9px 14px;font-size:15px;font-weight:700}.ch .on{border-color:var(--lime);color:var(--lime)}
 </style></head><body><div id="app"></div><div id="ov"></div>
 <script>
 var $=function(s){return document.querySelector(s)};
 var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 var AV=["🐢","🦊","🐸","🐼","🦁","🐙","🐯","🐵"];
-var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"}};
+var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"}};
 var WORDS="apple banana house car tree sun moon fish cat dog bird flower pizza burger cake phone clock chair bed book ball boat plane train bike hat shoe glasses cup door key umbrella star heart rain snowman guitar camera robot rocket pencil candle bridge".split(" ");
 var WYR=[["Fly like a bird","Swim like a fish"],["Always be late","Always be early"],["Eat pizza forever","Eat burgers forever"],["Have no phone for a week","Have no friends for a week"],["Be invisible","Read minds"],["Live in the mountains","Live by the sea"],["Never sleep","Never eat sweets"],["Talk to animals","Speak every language"],["Be super strong","Be super fast"],["Have a pet dragon","Have a pet robot"],["Watch only comedy","Watch only action"],["Travel to the past","Travel to the future"],["Sing everything you say","Dance everywhere you go"],["Have unlimited ice cream","Have unlimited pizza"],["Be famous","Be rich"],["Always be hot","Always be cold"]];
 var EMJ=[["🦁👑","lion king"],["🕷️👨","spiderman"],["❄️👸","frozen"],["🚢🧊","titanic"],["🐠🔍","finding nemo"],["🍕🐢","ninja turtles"],["🧙⚡","harry potter"],["🌧️☔","rain"],["📱🔋","phone"],["🍎📱","apple"],["☀️🏖️","beach"],["⚽🏆","football"],["🎂🎈","birthday"],["🚗💨","fast car"],["🐝🍯","honey"],["🌙⭐","night"],["🏏🇮🇳","cricket"],["🦇🧔","batman"],["🍫🏭","chocolate factory"],["👻🏠","haunted house"]];
+var CATS={
+fruits:{n:"Fruits",e:"🍎",w:"apple banana mango orange grapes guava papaya pear peach plum cherry lemon lime melon watermelon pineapple strawberry blueberry raspberry apricot fig date coconut kiwi pomegranate lychee tangerine mulberry avocado cranberry nectarine persimmon jackfruit grapefruit elderberry quince currant olive berry tamarind jamun loquat raisin ugli imli yuzu"},
+animals:{n:"Animals",e:"🦁",w:"lion tiger elephant monkey zebra giraffe horse camel donkey goat sheep cow buffalo dog cat rabbit deer fox wolf bear leopard cheetah panda kangaroo koala rhino hippo crocodile snake lizard frog turtle squirrel mouse rat hedgehog otter beaver bat dolphin whale shark seal walrus gorilla chimpanzee hyena jackal cobra ox yak llama alpaca ibex lynx mule pig tortoise eel lamb bull boar raccoon moose jaguar puma baboon antelope gazelle mongoose armadillo porcupine orangutan"},
+countries:{n:"Countries",e:"🌍",w:"pakistan india china japan iran iraq turkey egypt nepal bhutan oman yemen qatar kuwait jordan syria lebanon israel russia ukraine poland germany france spain italy portugal greece norway sweden finland denmark ireland iceland england scotland canada mexico brazil argentina chile peru colombia cuba australia indonesia malaysia thailand vietnam korea myanmar bangladesh srilanka afghanistan tajikistan uzbekistan kazakhstan azerbaijan armenia georgia nigeria kenya ethiopia somalia sudan libya algeria morocco tunisia ghana senegal uganda zambia zimbabwe angola namibia botswana tanzania belgium austria switzerland netherlands hungary romania serbia croatia albania bulgaria venezuela ecuador bolivia uruguay paraguay panama jamaica haiti singapore philippines mongolia laos cambodia maldives"},
+pkcities:{n:"Pakistan Cities",e:"🇵🇰",w:"karachi lahore islamabad rawalpindi faisalabad multan peshawar quetta hyderabad sialkot gujranwala bahawalpur sargodha sukkur larkana nawabshah mardan abbottabad swat gwadar murree jhelum gujrat sahiwal okara kasur dadu thatta mirpur muzaffarabad gilgit skardu hunza chitral kohat bannu mansehra attock chakwal khuzdar turbat zhob sibi jacobabad shikarpur khairpur mianwali bhakkar layyah vehari jhang kamalia sheikhupura narowal haripur taxila nowshera kotri sanghar badin"},
+colors:{n:"Colors",e:"🎨",w:"red blue green yellow orange purple pink brown black white grey gray violet indigo maroon cyan magenta golden silver beige turquoise teal navy olive lime lavender crimson scarlet coral peach cream ivory khaki tan amber bronze copper aqua azure mint rose ruby emerald saffron charcoal"},
+veg:{n:"Vegetables",e:"🥕",w:"potato tomato onion garlic ginger carrot cabbage cauliflower spinach peas corn cucumber radish turnip beetroot brinjal okra pumpkin gourd lettuce celery broccoli capsicum chilli mushroom coriander mint fenugreek eggplant zucchini leek asparagus artichoke yam kale squash bean parsley mustard aloo palak bhindi karela methi tinda arvi gobi matar shalgam mooli kaddu lauki pyaz lehsan adrak gajar"},
+birds:{n:"Birds",e:"🐦",w:"eagle sparrow crow parrot pigeon peacock owl hawk falcon duck goose swan hen rooster chicken turkey penguin ostrich flamingo pelican stork heron crane kingfisher woodpecker cuckoo nightingale myna bulbul dove vulture kite robin finch swallow starling magpie raven seagull albatross hummingbird canary lark quail partridge emu kiwi toucan cockatoo osprey bittern"},
+sports:{n:"Sports",e:"⚽",w:"cricket football hockey tennis badminton squash golf rugby baseball basketball volleyball boxing wrestling kabaddi swimming cycling running archery fencing judo karate taekwondo gymnastics skiing skating surfing sailing rowing diving polo snooker chess carrom shooting weightlifting athletics handball softball bowling darts netball lacrosse triathlon marathon"},
+foods:{n:"Foods",e:"🍛",w:"biryani nihari haleem karahi samosa pakora paratha roti naan kebab tikka korma pulao halwa kheer jalebi lassi chaat dahi daal chana qeema sajji paya kofta falooda barfi ladoo rabri qulfi pizza burger pasta sandwich shawarma fries noodles soup salad cake pie rice bread egg omelette steak sushi tacos curry pancake waffle donut cookie"}};
+Object.keys(CATS).forEach(function(k){CATS[k].w=CATS[k].w.w?CATS[k].w:CATS[k].w.split(" ")});
 var me=null,friends={},tab="play",room=null,code="",G=null,isHost=false,myId="me",peers=[],cv=null,cx=null,pend=[],lastRound=-9,pendGame=null;
 // ===== APNA NAYA FIREBASE CONFIG YAHAN PASTE KARO =====
-var CFG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",databaseURL:"https://YOUR_PROJECT-default-rtdb.firebaseio.com",projectId:"YOUR_PROJECT",storageBucket:"YOUR_PROJECT.firebasestorage.app",messagingSenderId:"0",appId:"YOUR_APP_ID"};
+var CFG=LS.get("ppcfg",null)||{apiKey:"AIzaSyDTG4mXEhcomMD4qoZO-eFpAk4PLKrYRow",authDomain:"play-41284.firebaseapp.com",databaseURL:"https://play-41284-default-rtdb.firebaseio.com",projectId:"play-41284",storageBucket:"play-41284.firebasestorage.app",messagingSenderId:"902967356478",appId:"1:902967356478:web:816b53bdd6e404aad7356f"};
 // ========================================================
 var db=null,auth=null,uid=null,blocks={},UC={},authErr="";
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -65,7 +77,7 @@ function fb(c){
     presence:function(p){var r=R.child("players/"+uid);r.set(p);r.onDisconnect().remove()},
     onPeers:function(fn){on(R.child("players"),"value",function(s){var v=s.val()||{},ps=[],j=[];Object.keys(v).forEach(function(k){var p={peer:k,isMe:k===uid,presence:v[k]};ps.push(p);if(!prev[k])j.push(p)});prev=v;fn({peers:ps,joined:j})})},
     leave:function(){L.forEach(function(x){x[0].off(x[1],x[2])});R.child("players/"+uid).remove();if(isHost)R.remove()}}}
-function nG(g){g.log=g.log||[];g.votes=g.votes||{};g.scores=g.scores||{};return g}
+function nG(g){g.log=g.log||[];g.votes=g.votes||{};g.scores=g.scores||{};g.used=g.used||[];g.lives=g.lives||{};return g}
 function connect(c,host){
   if(room){try{room.leave()}catch(e){}}
   code=c;isHost=host;G=null;peers=[];myId=uid;room=fb(c);
@@ -91,7 +103,7 @@ function closeP(){$("#ov").innerHTML=""}
 function showP(id){getU(id,function(u){var f=friends[id],b=blocks[id],self=id===uid;
   $("#ov").innerHTML='<div class="ov" onclick="closeP()"><div class="card" style="width:min(92%,360px);text-align:center" onclick="event.stopPropagation()"><div>'+av(u,96)+'</div><h1 style="font-size:26px">'+esc(u.name)+'</h1><p class="mut">'+esc(u.bio||"No bio yet")+'</p>'+(self?"":(b?'<button class="btn alt" onclick="unblk(\''+id+'\')">Unblock</button>':(f?'<button class="btn alt" onclick="rmFr(\''+id+'\')">Remove friend</button>':'<button class="btn" onclick="addFr(\''+id+'\')">+ Add friend</button>')+'<br><button class="btn alt" style="color:#ff8a7a" onclick="blk(\''+id+'\')">Block</button>'))+'<br><button class="btn alt" onclick="closeP()">Close</button></div></div>'})}
 function authInit(){
-  if(CFG.apiKey==="YOUR_API_KEY"){$("#app").innerHTML='<div class="card"><h1>Firebase setup needed</h1><p class="mut">Open this file and paste your own Firebase config in the CFG block near the top.</p></div>';return}
+  if(CFG.apiKey==="YOUR_API_KEY"){$("#app").innerHTML='<div class="card"><h1>Firebase connect karo</h1><p class="mut">Firebase Console → Project settings → Your apps → Web app ka <b>firebaseConfig</b> yahan paste karo (poora).</p><textarea id="cfgt" rows="8" placeholder="const firebaseConfig = { apiKey: ..., authDomain: ..., databaseURL: ... }" style="width:100%;background:#222;color:#fff;border:2px solid #2c2c2c;border-radius:16px;padding:12px;font-size:14px"></textarea><br><br><button class="btn" onclick="saveCfg()">Connect</button></div>';return}
   firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.database();
   auth.onAuthStateChanged(function(u){
     if(!u){uid=null;me=null;friends={};blocks={};render();return}
@@ -102,6 +114,11 @@ function authInit(){
       UC[uid]=me;loadSocial();
       var h=location.hash.replace("#","").toUpperCase();
       if(h.length===4&&!room)connect(h,false);else render()})})}
+function saveCfg(){var t=$("#cfgt").value,o={},m,re=/["']?(\w+)["']?\s*:\s*["']([^"']*)["']/g;while((m=re.exec(t)))o[m[1]]=m[2];
+  if(!o.apiKey||!o.projectId){alert("apiKey aur projectId nahi mile. Poora firebaseConfig paste karo");return}
+  if(!o.databaseURL)o.databaseURL="https://"+o.projectId+"-default-rtdb.firebaseio.com";
+  LS.set("ppcfg",o);location.reload()}
+function resetCfg(){try{localStorage.removeItem("ppcfg")}catch(e){}location.reload()}
 function doAuth(signup){
   var n=$("#un").value.trim().toLowerCase().replace(/[^a-z0-9_]/g,""),p=$("#pw").value;
   if(n.length<3||p.length<6){authErr="Username 3+ letters or numbers, password 6+ characters";render();return}
@@ -113,7 +130,7 @@ function saveProf(){me.name=($("#pn").value.trim()||me.name).slice(0,14);me.bio=
 function pickE(a){me.emoji=a;saveMe()}
 function setDp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=c.height=80;var x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,80,80);me.dp=c.toDataURL("image/jpeg",.7);saveMe()};im.src=r.result};r.readAsDataURL(f)}
 function push(){if(room)room.emit("state",G);render()}
-function startGame(){
+function startGame(){if(G.game==="chain")return startChain();
   var ps=players(),g=G.game,tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
   var sc={};ps.forEach(function(p){sc[p.id]=0});
   G={game:g,phase:"play",round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?WORDS.length:g==="wyr"?WYR.length:EMJ.length)};next()}
@@ -126,7 +143,7 @@ function next(){
   if(G.game==="wyr")G.q=WYR[i];
   if(G.game==="emoji"){G.e=EMJ[i][0];G.a=EMJ[i][1];G.deadline=Date.now()+45000}
   push()}
-function handleAct(id,d){
+function handleAct(id,d){if(G&&G.game==="chain"&&G.phase==="play"&&!blocks[id])return chainAct(id,d);
   if(!G||G.phase!=="play"||blocks[id])return;
   if(d.t==="guess"&&!G.solved){
     var ans=G.game==="draw"?G.word:G.a;
@@ -145,6 +162,7 @@ function act(d){if(isHost)handleAct(myId,d);else if(room)room.emit("act",d)}
 setInterval(function(){
   if(!G||G.phase!=="play"||!G.deadline)return;
   var t=$("#tm");if(t&&!G.solved)t.textContent=Math.max(0,Math.ceil((G.deadline-Date.now())/1000))+"s";
+  if(isHost&&G.game==="chain"){if(Date.now()>G.deadline)chainTimeout();return}
   if(isHost&&!G.solved&&Date.now()>G.deadline){G.solved={timeout:1};push();setTimeout(next,2500)}},1000);
 /* drawing */
 function ensureCv(){if(cv)return;cv=document.createElement("canvas");cv.width=600;cv.height=600;cx=cv.getContext("2d");cx.lineWidth=7;cx.lineCap="round";cx.strokeStyle="#111";
@@ -157,11 +175,44 @@ function seg(s){cx.beginPath();cx.moveTo(s[0]*600,s[1]*600);cx.lineTo(s[2]*600,s
 function flush(){if(pend.length&&room)room.emit("draw",pend);pend=[]}
 function drawSegs(a){if(a==="clear"){cx&&cx.clearRect(0,0,600,600);return}if(Array.isArray(a))a.forEach(seg)}
 function clearCv(){cx.clearRect(0,0,600,600);if(room)room.emit("draw","clear")}
+/* word chain */
+function catPick(){if(!G||G.game!=="chain")return"";var c=G.cat||"fruits";
+  return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">Sirf isi category ke words. Word pichhle word ke last letter se shuru ho, repeat nahi. 20s per turn, 3 lives.</p></div>'}
+function setCat(k){G.cat=k;push()}
+function startChain(){var ps=players(),sc={},lv={};ps.forEach(function(p){sc[p.id]=0;lv[p.id]=3});
+  G={game:"chain",phase:"play",cat:G.cat||"fruits",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,deadline:Date.now()+20000,log:[]};push()}
+function nextTurn(){var ps=players(),i=0,k,p;for(k=0;k<ps.length;k++)if(ps[k].id===G.turn)i=k;
+  for(k=1;k<=ps.length;k++){p=ps[(i+k)%ps.length];if((G.lives[p.id]||0)>0){G.turn=p.id;break}}
+  G.deadline=Date.now()+20000}
+function chainEnd(){var a=players().filter(function(p){return(G.lives[p.id]||0)>0}).length;return a===0||(G.multi&&a<2)}
+function chainAct(id,d){
+  if(d.t!=="word"||id!==G.turn)return;
+  var w=norm(d.v),L=CATS[G.cat].w,m="";if(!w)return;
+  if(L.indexOf(w)<0)m="is not in "+CATS[G.cat].n;
+  else if(G.used.indexOf(w)>-1)m="already used";
+  else if(G.need&&w.charAt(0)!==G.need)m="must start with "+G.need.toUpperCase();
+  if(m){G.log=G.log.concat([nameOf(id)+": "+String(d.v).slice(0,20)+" ❌ "+m]).slice(-4);push();return}
+  G.used=G.used.concat([w]);G.scores[id]=(G.scores[id]||0)+1;G.need=w.charAt(w.length-1);
+  G.log=G.log.concat([nameOf(id)+": "+w+" ✅"]).slice(-4);
+  var left=L.filter(function(x){return G.used.indexOf(x)<0});
+  if(!left.length){G.log=["🎉 Saare words ho gaye!"];G.phase="end";push();return}
+  if(!left.some(function(x){return x.charAt(0)===G.need})){G.log=G.log.concat(["🔄 "+G.need.toUpperCase()+" se koi word nahi bacha — ab koi bhi word"]).slice(-4);G.need=""}
+  nextTurn();push()}
+function chainTimeout(){var id=G.turn;G.lives[id]=Math.max(0,(G.lives[id]||0)-1);
+  G.log=G.log.concat(["⏰ "+nameOf(id)+" ka time khatam"+(G.lives[id]?"":" — out!")]).slice(-4);
+  if(chainEnd()){G.phase="end";push();return}
+  nextTurn();push()}
+function vChain(){var my=G.turn===myId,c=CATS[G.cat];
+  return'<div class="top"><span class="mut">'+c.e+' '+c.n+' · '+(c.w.length-G.used.length)+' left</span><span class="tm" id="tm">…</span></div>'
+  +'<div class="sc">'+players().map(function(p){var l=G.lives[p.id]||0;return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+' '+(l>0?"❤️".repeat(l):"💀")+'</div>'}).join("")+'</div>'
+  +'<div class="card" style="text-align:center"><div class="mut">'+(my?"Your turn!":esc(nameOf(G.turn))+"’s turn")+'</div><div class="big">'+(G.need?esc(G.need.toUpperCase()):"✨")+'</div><div class="mut">'+(G.need?"Is letter se shuru hone wala "+c.n+" word":"Koi bhi "+c.n+" word")+'</div></div>'
+  +(my?guessBox():'<p class="mut" style="text-align:center">'+esc(nameOf(G.turn))+' ka wait…</p>')
+  +'<div class="log">'+G.log.map(esc).join("<br>")+'</div><div class="mut" style="margin-top:10px">'+esc(G.used.slice(-10).join(" → "))+'</div>'}
 /* views */
 function shell(h,nav){function b(t,l){return'<button class="'+(tab===t?"on":"")+'" onclick="tab=\''+t+'\';render()">'+l+'</button>'}return h+(nav?'<div class="nav">'+b("play","🎮 Play")+b("fr","👥 Friends")+b("me","🙂 Me")+'</div>':"")}
 function logo(){return '<div class="logo"><span class="dots"><i style="background:#ff4b3a"></i><i style="background:#ffd500"></i><i style="background:#19b45a"></i><i style="background:#2f7bff"></i></span> PlayPals</div>'}
 function vLogin(){var h=location.hash.replace("#","");
-  return shell('<div class="top">'+logo()+'</div><h1>Play with friends, instantly.</h1><p class="mut">'+(h?"You’re joining room <b>"+esc(h)+"</b>. Log in or create an account to enter.":"Create an account to keep your profile and friends.")+'</p><div class="card"><input id="un" maxlength="16" placeholder="Username" autocapitalize="none" autocomplete="username"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">'+(authErr?'<div class="ok" style="color:#ff8a7a">'+esc(authErr)+'</div>':"")+'<button class="btn" onclick="doAuth(false)">Log in</button><br><button class="btn alt" onclick="doAuth(true)">Create account</button></div>')}
+  return shell('<div class="top">'+logo()+'</div><h1>Play with friends, instantly.</h1><p class="mut">'+(h?"You’re joining room <b>"+esc(h)+"</b>. Log in or create an account to enter.":"Create an account to keep your profile and friends.")+'</p><div class="card"><input id="un" maxlength="16" placeholder="Username" autocapitalize="none" autocomplete="username"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">'+(authErr?'<div class="ok" style="color:#ff8a7a">'+esc(authErr)+'</div>':"")+'<button class="btn" onclick="doAuth(false)">Log in</button><br><button class="btn alt" onclick="doAuth(true)">Create account</button></div><p class="mut" style="text-align:center"><a href="#" onclick="resetCfg();return false" style="color:#9a9a9a">Change Firebase config</a></p>')}
 function vHome(){
   return shell('<div class="top">'+logo()+'<span>'+me.emoji+' '+esc(me.name)+'</span></div><h1>Pick a game</h1><p class="mut">Make a room, share the link, play together.</p>'+
   Object.keys(GAMES).map(function(k){var g=GAMES[k];return'<button class="g" style="background:'+g.c+'" onclick="newRoom(\''+k+'\')"><span class="e">'+g.e+'</span><span><b>'+g.n+'</b><small>'+g.d+'</small></span></button>'}).join("")+
@@ -173,11 +224,11 @@ function vMe(){return shell('<div class="top">'+logo()+'<button class="btn sm al
 function share(u,t){if(navigator.share){navigator.share({title:"PlayPals",text:t,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link copied")},function(){prompt("Copy this link",u)})}else prompt("Copy this link",u)}
 function plist(){return players().map(function(p){return'<div class="pl" onclick="showP(\''+p.id+'\')"><span class="e">'+av(p)+'</span><b>'+esc(p.name)+(p.me?" (you)":"")+(p.host?" 👑":"")+(blocks[p.id]?" 🚫":"")+'</b><span class="mut">'+(p.me?"":friends[p.id]?"friend":"view ›")+'</span></div>'}).join("")}
 function vLobby(){var g=G?GAMES[G.game]:null,link=base()+"#"+code;
-  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?'<button class="btn" onclick="startGame()">Start game</button>':'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
+  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+'<h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?'<button class="btn" onclick="startGame()">Start game</button>':'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
 function scores(){return'<div class="sc">'+players().map(function(p){return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+'</div>'}).join("")+'</div>'}
 function head(){return'<div class="top"><span class="mut">Round '+(G.round+1)+'/'+G.total+'</span>'+(G.deadline&&!G.solved?'<span class="tm" id="tm">…</span>':'<span></span>')+'</div>'+scores()}
-function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="Type your guess" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
-function sendG(){var i=$("#gi");if(!i||!i.value.trim())return;act({t:"guess",v:i.value});i.value=""}
+function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="'+(G.game==="chain"?"Type a word":"Type your guess")+'" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
+function sendG(){var i=$("#gi");if(!i||!i.value.trim())return;act({t:G.game==="chain"?"word":"guess",v:i.value});i.value=""}
 function result(ans){if(!G.solved)return"";return G.solved.id?'<div class="ok">✅ '+esc(nameOf(G.solved.id))+' got it! It was “'+esc(ans)+'”</div>':'<div class="ok" style="color:#ff8a7a">⏰ Time’s up! It was “'+esc(ans)+'”</div>'}
 function vDraw(){var d=G.drawer===myId;
   return head()+'<div class="card"><div class="mut">'+(d?"You are drawing":esc(nameOf(G.drawer))+" is drawing")+'</div>'+(d?'<div class="mask">'+esc(G.word)+'</div>':'<div class="mask">'+(G.solved?esc(G.word):G.word.replace(/./g,"_ ").trim())+'</div>')+'</div><div id="cvh"></div>'+(d&&!G.solved?'<button class="btn alt" style="margin-top:10px" onclick="clearCv()">Clear</button>':"")+result(G.word)+(d?"":guessBox())+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'}
@@ -195,7 +246,7 @@ function render(){
   else if(!room)h=tab==="fr"?vFriends():tab==="me"?vMe():vHome();
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
-  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():vEmoji())}
+  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():vEmoji())}
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
   if(G&&G.phase==="lobby")lastRound=-9;
