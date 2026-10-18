@@ -51,6 +51,7 @@ birds:{n:"Birds",e:"🐦",w:"eagle sparrow crow parrot pigeon peacock owl hawk f
 sports:{n:"Sports",e:"⚽",w:"cricket football hockey tennis badminton squash golf rugby baseball basketball volleyball boxing wrestling kabaddi swimming cycling running archery fencing judo karate taekwondo gymnastics skiing skating surfing sailing rowing diving polo snooker chess carrom shooting weightlifting athletics handball softball bowling darts netball lacrosse triathlon marathon"},
 foods:{n:"Foods",e:"🍛",w:"biryani nihari haleem karahi samosa pakora paratha roti naan kebab tikka korma pulao halwa kheer jalebi lassi chaat dahi daal chana qeema sajji paya kofta falooda barfi ladoo rabri qulfi pizza burger pasta sandwich shawarma fries noodles soup salad cake pie rice bread egg omelette steak sushi tacos curry pancake waffle donut cookie"}};
 Object.keys(CATS).forEach(function(k){CATS[k].w=CATS[k].w.w?CATS[k].w:CATS[k].w.split(" ")});
+(function(){var A={all:{n:"All",e:"🌐",w:[]}},k;for(k in CATS){A[k]=CATS[k];CATS[k].w.forEach(function(x){if(A.all.w.indexOf(x)<0)A.all.w.push(x)})}CATS=A})();
 var me=null,friends={},tab="play",room=null,code="",G=null,isHost=false,myId="me",peers=[],cv=null,cx=null,pend=[],lastRound=-9,pendGame=null;
 // ===== APNA NAYA FIREBASE CONFIG YAHAN PASTE KARO =====
 var CFG=LS.get("ppcfg",null)||{apiKey:"AIzaSyDTG4mXEhcomMD4qoZO-eFpAk4PLKrYRow",authDomain:"play-41284.firebaseapp.com",databaseURL:"https://play-41284-default-rtdb.firebaseio.com",projectId:"play-41284",storageBucket:"play-41284.firebasestorage.app",messagingSenderId:"902967356478",appId:"1:902967356478:web:816b53bdd6e404aad7356f"};
@@ -238,7 +239,7 @@ function nextTurn(){var ps=players(),i=0,k,p;for(k=0;k<ps.length;k++)if(ps[k].id
   for(k=1;k<=ps.length;k++){p=ps[(i+k)%ps.length];if((G.lives[p.id]||0)>0){G.turn=p.id;break}}
   G.deadline=Date.now()+30000}
 function chainEnd(){var a=players().filter(function(p){return(G.lives[p.id]||0)>0}).length;return a===0||(G.multi&&a<2)}
-function newRound(){var ks=Object.keys(CATS).filter(function(k){return k!==G.cat}),k=ks[Math.floor(Math.random()*ks.length)];
+function newRound(){var ks=Object.keys(CATS).filter(function(k){return k!==G.cat&&k!=="all"}),k=G.cat==="all"?"all":ks[Math.floor(Math.random()*ks.length)];
   G.cat=k;G.used=[];G.need="";G.rnd=(G.rnd||1)+1;G.log=G.log.concat(["🔄 Round "+G.rnd+": "+CATS[k].e+" "+CATS[k].n]).slice(-4)}
 function afterLoss(){if(chainEnd()){G.phase="end";push();return}var out=(G.lives[G.turn]||0)<=0;nextTurn();if(out)newRound();push()}
 function chainAct(id,d){
