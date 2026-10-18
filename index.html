@@ -99,9 +99,22 @@ function addFr(id){db.ref("pp/friends/"+uid+"/"+id).set(true);closeP()}
 function rmFr(id){db.ref("pp/friends/"+uid+"/"+id).remove();closeP()}
 function blk(id){db.ref("pp/blocks/"+uid+"/"+id).set(true);db.ref("pp/friends/"+uid+"/"+id).remove();closeP()}
 function unblk(id){db.ref("pp/blocks/"+uid+"/"+id).remove();closeP()}
-function closeP(){$("#ov").innerHTML=""}
+var armed=false,skip=false;
+function depth(){var o=$("#ov");return(o&&o.innerHTML)||room||tab!=="play"?1:0}
+function sync(){var d=depth();
+  if(d>0&&!armed){try{history.pushState({pp:1},"",location.href);armed=true}catch(e){}}
+  else if(d===0&&armed){armed=false;skip=true;history.back()}}
+window.addEventListener("popstate",function(){
+  if(skip){skip=false;return}
+  armed=false;
+  if(depth()===0)return;
+  var o=$("#ov");
+  if(o&&o.innerHTML){closeP();return}
+  if(room){if(confirm("Room chhod kar home jana hai?"))leave();else sync();return}
+  tab="play";render()});
+function closeP(){$("#ov").innerHTML="";sync()}
 function showP(id){getU(id,function(u){var f=friends[id],b=blocks[id],self=id===uid;
-  $("#ov").innerHTML='<div class="ov" onclick="closeP()"><div class="card" style="width:min(92%,360px);text-align:center" onclick="event.stopPropagation()"><div>'+av(u,96)+'</div><h1 style="font-size:26px">'+esc(u.name)+'</h1><p class="mut">'+esc(u.bio||"No bio yet")+'</p>'+(self?"":(b?'<button class="btn alt" onclick="unblk(\''+id+'\')">Unblock</button>':(f?'<button class="btn alt" onclick="rmFr(\''+id+'\')">Remove friend</button>':'<button class="btn" onclick="addFr(\''+id+'\')">+ Add friend</button>')+'<br><button class="btn alt" style="color:#ff8a7a" onclick="blk(\''+id+'\')">Block</button>'))+'<br><button class="btn alt" onclick="closeP()">Close</button></div></div>'})}
+  $("#ov").innerHTML='<div class="ov" onclick="closeP()"><div class="card" style="width:min(92%,360px);text-align:center" onclick="event.stopPropagation()"><div>'+av(u,96)+'</div><h1 style="font-size:26px">'+esc(u.name)+'</h1><p class="mut">'+esc(u.bio||"No bio yet")+'</p>'+(self?"":(b?'<button class="btn alt" onclick="unblk(\''+id+'\')">Unblock</button>':(f?'<button class="btn alt" onclick="rmFr(\''+id+'\')">Remove friend</button>':'<button class="btn" onclick="addFr(\''+id+'\')">+ Add friend</button>')+'<br><button class="btn alt" style="color:#ff8a7a" onclick="blk(\''+id+'\')">Block</button>'))+'<br><button class="btn alt" onclick="closeP()">Close</button></div></div>';sync()})}
 function authInit(){
   if(CFG.apiKey==="YOUR_API_KEY"){$("#app").innerHTML='<div class="card"><h1>Firebase connect karo</h1><p class="mut">Firebase Console → Project settings → Your apps → Web app ka <b>firebaseConfig</b> yahan paste karo (poora).</p><textarea id="cfgt" rows="8" placeholder="const firebaseConfig = { apiKey: ..., authDomain: ..., databaseURL: ... }" style="width:100%;background:#222;color:#fff;border:2px solid #2c2c2c;border-radius:16px;padding:12px;font-size:14px"></textarea><br><br><button class="btn" onclick="saveCfg()">Connect</button></div>';return}
   firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.database();
@@ -119,9 +132,11 @@ function saveCfg(){var t=$("#cfgt").value,o={},m,re=/["']?(\w+)["']?\s*:\s*["'](
   if(!o.databaseURL)o.databaseURL="https://"+o.projectId+"-default-rtdb.firebaseio.com";
   LS.set("ppcfg",o);location.reload()}
 function resetCfg(){try{localStorage.removeItem("ppcfg")}catch(e){}location.reload()}
+var authMode="login";function setAuth(m){authMode=m;authErr="";render()}
 function doAuth(signup){
   var n=$("#un").value.trim().toLowerCase().replace(/[^a-z0-9_]/g,""),p=$("#pw").value;
   if(n.length<3||p.length<6){authErr="Username 3+ letters or numbers, password 6+ characters";render();return}
+  if(signup&&$("#pw2")&&$("#pw2").value!==p){authErr="Dono password match nahi kar rahe";render();return}
   authErr="";var em=n+"@playpals.app";
   (signup?auth.createUserWithEmailAndPassword(em,p):auth.signInWithEmailAndPassword(em,p)).catch(function(e){var c=e.code;authErr=c==="auth/email-already-in-use"?"Username taken, try Log in":(c==="auth/invalid-credential"||c==="auth/wrong-password"||c==="auth/user-not-found")?"Wrong username or password":e.message;render()})}
 function logout(){leave();auth.signOut()}
@@ -212,7 +227,7 @@ function vChain(){var my=G.turn===myId,c=CATS[G.cat];
 function shell(h,nav){function b(t,l){return'<button class="'+(tab===t?"on":"")+'" onclick="tab=\''+t+'\';render()">'+l+'</button>'}return h+(nav?'<div class="nav">'+b("play","🎮 Play")+b("fr","👥 Friends")+b("me","🙂 Me")+'</div>':"")}
 function logo(){return '<div class="logo"><span class="dots"><i style="background:#ff4b3a"></i><i style="background:#ffd500"></i><i style="background:#19b45a"></i><i style="background:#2f7bff"></i></span> PlayPals</div>'}
 function vLogin(){var h=location.hash.replace("#","");
-  return shell('<div class="top">'+logo()+'</div><h1>Play with friends, instantly.</h1><p class="mut">'+(h?"You’re joining room <b>"+esc(h)+"</b>. Log in or create an account to enter.":"Create an account to keep your profile and friends.")+'</p><div class="card"><input id="un" maxlength="16" placeholder="Username" autocapitalize="none" autocomplete="username"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">'+(authErr?'<div class="ok" style="color:#ff8a7a">'+esc(authErr)+'</div>':"")+'<button class="btn" onclick="doAuth(false)">Log in</button><br><button class="btn alt" onclick="doAuth(true)">Create account</button></div><p class="mut" style="text-align:center"><a href="#" onclick="resetCfg();return false" style="color:#9a9a9a">Change Firebase config</a></p>')}
+  return shell('<div class="top">'+logo()+'</div><h1>Play with friends, instantly.</h1><p class="mut">'+(h?"You’re joining room <b>"+esc(h)+"</b>. Log in or create an account to enter.":"Create an account to keep your profile and friends.")+'</p><div class="card"><div class="ch" style="margin-bottom:8px"><button class="'+(authMode==="login"?"on":"")+'" onclick="setAuth(\'login\')">Log in</button><button class="'+(authMode==="signup"?"on":"")+'" onclick="setAuth(\'signup\')">Create account</button></div><input id="un" maxlength="16" placeholder="Username" autocapitalize="none" autocomplete="username"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="'+(authMode==="signup"?"new-password":"current-password")+'">'+(authMode==="signup"?'<input id="pw2" type="password" placeholder="Confirm password" autocomplete="new-password">':"")+(authErr?'<div class="ok" style="color:#ff8a7a">'+esc(authErr)+'</div>':"")+'<button class="btn" onclick="doAuth('+(authMode==="signup")+')">'+(authMode==="signup"?"Create account":"Log in")+'</button></div><p class="mut" style="text-align:center"><a href="#" onclick="resetCfg();return false" style="color:#9a9a9a">Change Firebase config</a></p>')}
 function vHome(){
   return shell('<div class="top">'+logo()+'<span>'+me.emoji+' '+esc(me.name)+'</span></div><h1>Pick a game</h1><p class="mut">Make a room, share the link, play together.</p>'+
   Object.keys(GAMES).map(function(k){var g=GAMES[k];return'<button class="g" style="background:'+g.c+'" onclick="newRoom(\''+k+'\')"><span class="e">'+g.e+'</span><span><b>'+g.n+'</b><small>'+g.d+'</small></span></button>'}).join("")+
@@ -250,6 +265,6 @@ function render(){
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
   if(G&&G.phase==="lobby")lastRound=-9;
-  var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}}
+  var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}sync()}
 authInit();if(db)render();
 </script></body></html>
