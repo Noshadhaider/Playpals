@@ -75,7 +75,7 @@ function fb(c){
       if(t==="state")return R.child("state").set(JSON.parse(JSON.stringify(d)));
       if(t==="act")return R.child("acts").push({by:uid,d:d});
       if(t==="draw")return R.child("draw").push({by:uid,d:d})},
-    presence:function(p){var r=R.child("players/"+uid);r.set(p);r.onDisconnect().remove()},
+    presence:function(p){var r=R.child("players/"+uid);on(db.ref(".info/connected"),"value",function(s){if(s.val()){r.set(p);r.onDisconnect().remove()}})},
     onPeers:function(fn){on(R.child("players"),"value",function(s){var v=s.val()||{},ps=[],j=[];Object.keys(v).forEach(function(k){var p={peer:k,isMe:k===uid,presence:v[k]};ps.push(p);if(!prev[k])j.push(p)});prev=v;fn({peers:ps,joined:j})})},
     leave:function(){L.forEach(function(x){x[0].off(x[1],x[2])});R.child("players/"+uid).remove();if(isHost)R.remove()}}}
 function nG(g){g.log=g.log||[];g.votes=g.votes||{};g.scores=g.scores||{};g.skips=g.skips||{};g.used=g.used||[];g.lives=g.lives||{};return g}
@@ -98,20 +98,20 @@ function doConnect(c,host,re){
 function newRoom(game){pendGame=game;var c="";for(var i=0;i<4;i++)c+="ABCDEFGHJKLMNPQRSTUVWXYZ".charAt(Math.floor(Math.random()*24));connect(c,true)}
 function leave(){try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
 function av(p,s){s=s||34;var d=p.dp&&String(p.dp).indexOf("data:image/")===0;return d?'<img src="'+esc(p.dp)+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover">':'<span style="font-size:'+Math.round(s*.8)+'px">'+esc(p.emoji||"🙂")+'</span>'}
-var sentInv={},invs={};
+var sentInv={},invs={},invAt={};
 function invList(){var ids=Object.keys(friends).filter(function(i){return!blocks[i]});
   if(!ids.length)return'<p class="mut">Abhi koi friend nahi. Friends tab me ID se add karo.</p>';
   return ids.map(function(i){var u=UC[i];if(!u){getU(i,function(){render()});u={name:"…"}}
     var inR=players().some(function(p){return p.id===i});
     return'<div class="pl"><span class="e">'+av(u)+'</span><b>'+esc(u.name)+'</b>'+(inR?'<span class="mut">In room</span>':sentInv[i]?'<span class="mut">Sent ✓</span>':'<button class="btn sm" style="flex:0" onclick="invite(\''+i+'\')">Invite</button>')+'</div>'}).join("")}
-function invite(i){sentInv[i]=1;db.ref("pp/invites/"+i+"/"+code).set({from:me.name,game:G?G.game:"",t:Date.now()});render()}
+function invite(i){sentInv[i]=Date.now();db.ref("pp/invites/"+i+"/"+code).set({from:me.name,game:G?G.game:"",t:Date.now()});render()}
 function dropInv(c){db.ref("pp/invites/"+uid+"/"+c).remove()}
 function joinInv(c){dropInv(c);connect(c,false)}
-function invBanner(){var o="";Object.keys(invs).forEach(function(c){var v=invs[c];if(!v||Date.now()-v.t>600000)return;var g=GAMES[v.game]||{e:"🎮",n:"game"};
+function invBanner(){var o="";Object.keys(invs).forEach(function(c){var v=invs[c];if(!v||!invAt[c]||Date.now()-invAt[c].at>30000)return;var g=GAMES[v.game]||{e:"🎮",n:"game"};
   o+='<div class="card" style="margin:6px 0;border:2px solid var(--lime)"><b>'+esc(v.from)+'</b> ne '+g.e+' '+g.n+' me invite kiya<div class="row" style="margin-top:8px"><button class="btn sm" onclick="joinInv(\''+c+'\')">Join</button><button class="btn sm alt" onclick="dropInv(\''+c+'\')">Reject</button></div></div>'});
   return o?'<div style="position:fixed;top:env(safe-area-inset-top,0px);left:8px;right:8px;z-index:60">'+o+'</div>':""}
 function loadSocial(){
-  db.ref("pp/invites/"+uid).on("value",function(s){invs=s.val()||{};render()});
+  db.ref("pp/invites/"+uid).on("value",function(s){invs=s.val()||{};Object.keys(invs).forEach(function(c){var v=invs[c];if(!v)return;if(Date.now()-v.t>600000){delete invs[c];dropInv(c);return}if(!invAt[c]||invAt[c].t!==v.t)invAt[c]={t:v.t,at:Date.now()}});render()});
   friends=LS.get("ppfr_"+uid,{});blocks=LS.get("ppbl_"+uid,{});
   db.ref("pp/friends/"+uid).on("value",function(s){friends=s.val()||{};LS.set("ppfr_"+uid,friends);render()});
   db.ref("pp/blocks/"+uid).on("value",function(s){blocks=s.val()||{};LS.set("ppbl_"+uid,blocks);render()})}
@@ -231,7 +231,7 @@ function drawSegs(a){if(a==="clear"){cx&&cx.clearRect(0,0,600,600);return}if(Arr
 function clearCv(){cx.clearRect(0,0,600,600);if(room)room.emit("draw","clear")}
 /* word chain */
 function catPick(){if(!G||G.game!=="chain")return"";var c=G.cat||"fruits";
-  return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">Sirf isi category ke words, pichhle word ke last letter se, repeat nahi. 30s per turn. 3 galat jawab ya time out = out. Koi out ho to naya round aur nayi category.</p></div>'}
+  return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">'+(c==='all'?'All me koi bhi word chalega, bas pichhle word ke last letter se shuru ho aur repeat na ho.':'Sirf isi category ke words, pichhle word ke last letter se, repeat nahi.')+' 30s per turn. 3 galat jawab ya time out = out. Koi out ho to naya round aur nayi category.</p></div>'}
 function setCat(k){G.cat=k;push()}
 function startChain(){var ps=players(),sc={},lv={};ps.forEach(function(p){sc[p.id]=0;lv[p.id]=3});
   G={game:"chain",phase:"play",cat:G.cat||"fruits",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,rnd:1,deadline:Date.now()+30000,log:[]};push()}
@@ -245,22 +245,22 @@ function afterLoss(){if(chainEnd()){G.phase="end";push();return}var out=(G.lives
 function chainAct(id,d){
   if(d.t!=="word"||id!==G.turn)return;
   var w=norm(d.v),L=CATS[G.cat].w,m="";if(!w)return;
-  if(L.indexOf(w)<0)m="is not in "+CATS[G.cat].n;
+  if(G.cat==="all"?!/^[a-z]{2,}$/.test(w):L.indexOf(w)<0)m=G.cat==="all"?"sahi word likho (sirf letters)":"is not in "+CATS[G.cat].n;
   else if(G.used.indexOf(w)>-1)m="already used";
   else if(G.need&&w.charAt(0)!==G.need)m="must start with "+G.need.toUpperCase();
   if(m){G.lives[id]=Math.max(0,(G.lives[id]||0)-1);G.log=G.log.concat([nameOf(id)+": "+String(d.v).slice(0,20)+" ❌ "+m+(G.lives[id]?"":" — OUT!")]).slice(-4);afterLoss();return}
   G.used=G.used.concat([w]);G.scores[id]=(G.scores[id]||0)+1;G.need=w.charAt(w.length-1);
   G.log=G.log.concat([nameOf(id)+": "+w+" ✅"]).slice(-4);
   var left=L.filter(function(x){return G.used.indexOf(x)<0});
-  if(!left.length){newRound();nextTurn();push();return}
-  if(!left.some(function(x){return x.charAt(0)===G.need})){G.log=G.log.concat(["🔄 "+G.need.toUpperCase()+" se koi word nahi bacha — ab koi bhi word"]).slice(-4);G.need=""}
+  if(G.cat!=="all"&&!left.length){newRound();nextTurn();push();return}
+  if(G.cat!=="all"&&!left.some(function(x){return x.charAt(0)===G.need})){G.log=G.log.concat(["🔄 "+G.need.toUpperCase()+" se koi word nahi bacha — ab koi bhi word"]).slice(-4);G.need=""}
   nextTurn();push()}
 function chainTimeout(){var id=G.turn;G.lives[id]=0;
   G.log=G.log.concat(["⏰ "+nameOf(id)+" ka time khatam — OUT!"]).slice(-4);afterLoss()}
 function vChain(){var my=G.turn===myId,c=CATS[G.cat];
   return'<div class="top"><span class="mut">'+'Round '+(G.rnd||1)+' · '+c.e+' '+c.n+'</span><span class="tm" id="tm">…</span></div>'
   +'<div class="sc">'+players().map(function(p){var l=G.lives[p.id]||0;return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+' '+(l>0?"❤️".repeat(l):"💀")+'</div>'}).join("")+'</div>'
-  +'<div class="card" style="text-align:center"><div class="mut">'+(my?"Your turn!":esc(nameOf(G.turn))+"’s turn")+'</div><div class="big">'+(G.need?esc(G.need.toUpperCase()):"✨")+'</div><div class="mut">'+(G.need?"Is letter se shuru hone wala "+c.n+" word":"Koi bhi "+c.n+" word")+'</div></div>'
+  +'<div class="card" style="text-align:center"><div class="mut">'+(my?"Your turn!":esc(nameOf(G.turn))+"’s turn")+'</div><div class="big">'+(G.need?esc(G.need.toUpperCase()):"✨")+'</div><div class="mut">'+(G.need?(G.cat==="all"?"Is letter se shuru hone wala koi bhi word":"Is letter se shuru hone wala "+c.n+" word"):(G.cat==="all"?"Koi bhi word":"Koi bhi "+c.n+" word"))+'</div></div>'
   +(my?guessBox():'<p class="mut" style="text-align:center">'+esc(nameOf(G.turn))+' ka wait…</p>')
   +'<div class="log">'+G.log.map(esc).join("<br>")+'</div><div class="mut" style="margin-top:10px">'+esc(G.used.slice(-10).join(" → "))+'</div>'}
 /* views */
@@ -308,5 +308,6 @@ function render(){
   if(G&&G.phase==="lobby")lastRound=-9;
   var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}sync()}
 if("serviceWorker"in navigator&&location.protocol.indexOf("http")===0)window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+setInterval(function(){var ch=0,n=Date.now(),k;for(k in sentInv)if(n-sentInv[k]>30000){delete sentInv[k];ch=1}for(k in invs)if(invAt[k]&&n-invAt[k].at>30000&&invs[k]){delete invs[k];dropInv(k);ch=1}if(ch)render()},2000);
 authInit();if(db)render();
 </script></body></html>
