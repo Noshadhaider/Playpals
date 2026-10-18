@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PlayPals</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+:root{--bg:#0a0a0a;--card:#161616;--ink:#fff;--mut:#9a9a9a;--lime:#c9f03c;--yel:#ffd500;--grn:#19b45a;--red:#ff4b3a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:var(--bg) radial-gradient(circle at 0 0,#ffd50033,transparent 45%),radial-gradient(circle at 100% 0,#19b45a33,transparent 45%);background-repeat:no-repeat;color:var(--ink);font:16px/1.35 -apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:520px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:34px;line-height:1.05;margin:8px 0 6px;letter-spacing:-1px}h2{font-size:15px;color:var(--mut);margin:22px 0 10px;font-weight:600}
+.card{background:var(--card);border-radius:24px;padding:16px;margin-bottom:12px}
+.btn{display:block;width:100%;border:0;border-radius:999px;background:var(--lime);color:#111;font-weight:800;font-size:17px;padding:15px;cursor:pointer}
+.btn.alt{background:#262626;color:#fff}.btn.sm{display:inline-block;width:auto;padding:8px 14px;font-size:14px}
+input{width:100%;background:#222;border:2px solid #2c2c2c;border-radius:16px;color:#fff;font-size:17px;padding:13px;margin:8px 0;outline:0}input:focus{border-color:var(--lime)}
+.top{display:flex;align-items:center;justify-content:space-between}.logo{display:flex;gap:4px;align-items:center;font-weight:800}
+.dots i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:-3px}
+.g{display:flex;align-items:center;gap:14px;border-radius:26px;padding:18px;margin-bottom:12px;color:#111;cursor:pointer;border:0;width:100%;text-align:left}
+.g b{font-size:22px;display:block;line-height:1.1}.g span.e{font-size:42px}.g small{opacity:.7}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}.pl{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #262626}.pl:last-child{border:0}.pl .e{font-size:26px;flex:0}.pl b{flex:1}
+.nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,#000 40%)}
+.nav button{flex:1;max-width:200px;border:0;border-radius:999px;padding:13px;font-weight:700;font-size:15px;background:#1c1c1c;color:#bbb}.nav .on{background:var(--lime);color:#111}
+.code{font-size:44px;font-weight:900;letter-spacing:8px;text-align:center;color:var(--lime)}
+.em{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.em button{font-size:28px;background:#222;border:2px solid transparent;border-radius:16px;padding:6px 10px}.em .on{border-color:var(--lime)}
+canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action:none;display:block}
+.sc{display:flex;gap:8px;overflow-x:auto;margin:10px 0}.sc div{background:#222;border-radius:999px;padding:6px 12px;white-space:nowrap;font-size:14px}
+.big{font-size:64px;text-align:center;margin:10px 0;letter-spacing:4px}.mask{font-size:30px;text-align:center;letter-spacing:6px;font-weight:800}
+.opt{display:block;width:100%;text-align:left;border:0;border-radius:22px;padding:18px;font-size:19px;font-weight:800;margin-bottom:10px;color:#111;position:relative;overflow:hidden}
+.opt .f{position:absolute;left:0;top:0;bottom:0;background:#0003}.opt span{position:relative}
+.tm{background:#ff4b3a;color:#fff;border-radius:999px;padding:4px 12px;font-weight:800}.ok{color:var(--lime);font-weight:800;text-align:center;margin:8px 0}
+.mut{color:var(--mut);font-size:14px}.log{font-size:14px;color:#bbb;min-height:20px}
+.ov{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:9}.pl{cursor:pointer}.sc div{cursor:pointer;display:flex;align-items:center;gap:5px}
+</style></head><body><div id="app"></div><div id="ov"></div>
+<script>
+var $=function(s){return document.querySelector(s)};
+var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+var AV=["🐢","🦊","🐸","🐼","🦁","🐙","🐯","🐵"];
+var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"}};
+var WORDS="apple banana house car tree sun moon fish cat dog bird flower pizza burger cake phone clock chair bed book ball boat plane train bike hat shoe glasses cup door key umbrella star heart rain snowman guitar camera robot rocket pencil candle bridge".split(" ");
+var WYR=[["Fly like a bird","Swim like a fish"],["Always be late","Always be early"],["Eat pizza forever","Eat burgers forever"],["Have no phone for a week","Have no friends for a week"],["Be invisible","Read minds"],["Live in the mountains","Live by the sea"],["Never sleep","Never eat sweets"],["Talk to animals","Speak every language"],["Be super strong","Be super fast"],["Have a pet dragon","Have a pet robot"],["Watch only comedy","Watch only action"],["Travel to the past","Travel to the future"],["Sing everything you say","Dance everywhere you go"],["Have unlimited ice cream","Have unlimited pizza"],["Be famous","Be rich"],["Always be hot","Always be cold"]];
+var EMJ=[["🦁👑","lion king"],["🕷️👨","spiderman"],["❄️👸","frozen"],["🚢🧊","titanic"],["🐠🔍","finding nemo"],["🍕🐢","ninja turtles"],["🧙⚡","harry potter"],["🌧️☔","rain"],["📱🔋","phone"],["🍎📱","apple"],["☀️🏖️","beach"],["⚽🏆","football"],["🎂🎈","birthday"],["🚗💨","fast car"],["🐝🍯","honey"],["🌙⭐","night"],["🏏🇮🇳","cricket"],["🦇🧔","batman"],["🍫🏭","chocolate factory"],["👻🏠","haunted house"]];
+var me=null,friends={},tab="play",room=null,code="",G=null,isHost=false,myId="me",peers=[],cv=null,cx=null,pend=[],lastRound=-9,pendGame=null;
+// ===== APNA NAYA FIREBASE CONFIG YAHAN PASTE KARO =====
+var CFG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",databaseURL:"https://YOUR_PROJECT-default-rtdb.firebaseio.com",projectId:"YOUR_PROJECT",storageBucket:"YOUR_PROJECT.firebasestorage.app",messagingSenderId:"0",appId:"YOUR_APP_ID"};
+// ========================================================
+var db=null,auth=null,uid=null,blocks={},UC={},authErr="";
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function norm(s){return String(s).toLowerCase().replace(/[^a-z0-9]/g,"")}
+function shuf(n){var a=[],i,j,t;for(i=0;i<n;i++)a.push(i);for(i=n-1;i>0;i--){j=Math.floor(Math.random()*(i+1));t=a[i];a[i]=a[j];a[j]=t}return a}
+function base(){return location.href.split("#")[0]}
+function players(){return peers.length?peers:[{id:myId,name:me?me.name:"Me",emoji:me?me.emoji:"🙂",me:true}]}
+function nameOf(id){var p=players().filter(function(x){return x.id===id})[0];return p?p.name:"Someone"}
+function fb(c){
+  var R=db.ref("pp/rooms/"+c),L=[],prev={};
+  function on(ref,ev,f){ref.on(ev,f);L.push([ref,ev,f])}
+  return{
+    on:function(t,fn){
+      if(t==="state")on(R.child("state"),"value",function(s){var v=s.val();if(v)fn({isMe:false,data:v})});
+      if(t==="act"&&isHost)on(R.child("acts"),"child_added",function(s){var v=s.val();s.ref.remove();if(v)fn({peer:v.by,data:v.d})});
+      if(t==="draw")on(R.child("draw"),"child_added",function(s){var v=s.val();if(v)fn({isMe:v.by===uid,peer:v.by,data:v.d})})},
+    emit:function(t,d){
+      if(t==="state")return R.child("state").set(JSON.parse(JSON.stringify(d)));
+      if(t==="act")return R.child("acts").push({by:uid,d:d});
+      if(t==="draw")return R.child("draw").push({by:uid,d:d})},
+    presence:function(p){var r=R.child("players/"+uid);r.set(p);r.onDisconnect().remove()},
+    onPeers:function(fn){on(R.child("players"),"value",function(s){var v=s.val()||{},ps=[],j=[];Object.keys(v).forEach(function(k){var p={peer:k,isMe:k===uid,presence:v[k]};ps.push(p);if(!prev[k])j.push(p)});prev=v;fn({peers:ps,joined:j})})},
+    leave:function(){L.forEach(function(x){x[0].off(x[1],x[2])});R.child("players/"+uid).remove();if(isHost)R.remove()}}}
+function nG(g){g.log=g.log||[];g.votes=g.votes||{};g.scores=g.scores||{};return g}
+function connect(c,host){
+  if(room){try{room.leave()}catch(e){}}
+  code=c;isHost=host;G=null;peers=[];myId=uid;room=fb(c);
+  room.on("state",function(m){if(isHost)return;G=nG(m.data);render()});
+  room.on("act",function(m){handleAct(m.peer,m.data)});
+  room.on("draw",function(m){if(!m.isMe&&!blocks[m.peer])drawSegs(m.data)});
+  room.onPeers(function(ch){peers=ch.peers.map(function(p){var q=p.presence||{};return{id:p.peer,name:q.name||"Guest",emoji:q.emoji||"🙂",dp:q.dp||"",host:!!q.host,me:p.isMe}});if(isHost&&G&&ch.joined.length)room.emit("state",G);render()});
+  room.presence({name:me.name,emoji:me.emoji,dp:me.dp||"",host:host});
+  if(host&&pendGame){G={game:pendGame,phase:"lobby"};pendGame=null;room.emit("state",G)}
+  render()}
+function newRoom(game){pendGame=game;var c="";for(var i=0;i<4;i++)c+="ABCDEFGHJKLMNPQRSTUVWXYZ".charAt(Math.floor(Math.random()*24));connect(c,true)}
+function leave(){try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
+function av(p,s){s=s||34;var d=p.dp&&String(p.dp).indexOf("data:image/")===0;return d?'<img src="'+esc(p.dp)+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover">':'<span style="font-size:'+Math.round(s*.8)+'px">'+esc(p.emoji||"🙂")+'</span>'}
+function loadSocial(){
+  db.ref("pp/friends/"+uid).on("value",function(s){friends=s.val()||{};render()});
+  db.ref("pp/blocks/"+uid).on("value",function(s){blocks=s.val()||{};render()})}
+function getU(id,cb){if(UC[id])return cb(UC[id]);db.ref("pp/users/"+id).once("value").then(function(s){UC[id]=s.val()||{name:"User",emoji:"🙂"};cb(UC[id])})}
+function addFr(id){db.ref("pp/friends/"+uid+"/"+id).set(true);closeP()}
+function rmFr(id){db.ref("pp/friends/"+uid+"/"+id).remove();closeP()}
+function blk(id){db.ref("pp/blocks/"+uid+"/"+id).set(true);db.ref("pp/friends/"+uid+"/"+id).remove();closeP()}
+function unblk(id){db.ref("pp/blocks/"+uid+"/"+id).remove();closeP()}
+function closeP(){$("#ov").innerHTML=""}
+function showP(id){getU(id,function(u){var f=friends[id],b=blocks[id],self=id===uid;
+  $("#ov").innerHTML='<div class="ov" onclick="closeP()"><div class="card" style="width:min(92%,360px);text-align:center" onclick="event.stopPropagation()"><div>'+av(u,96)+'</div><h1 style="font-size:26px">'+esc(u.name)+'</h1><p class="mut">'+esc(u.bio||"No bio yet")+'</p>'+(self?"":(b?'<button class="btn alt" onclick="unblk(\''+id+'\')">Unblock</button>':(f?'<button class="btn alt" onclick="rmFr(\''+id+'\')">Remove friend</button>':'<button class="btn" onclick="addFr(\''+id+'\')">+ Add friend</button>')+'<br><button class="btn alt" style="color:#ff8a7a" onclick="blk(\''+id+'\')">Block</button>'))+'<br><button class="btn alt" onclick="closeP()">Close</button></div></div>'})}
+function authInit(){
+  if(CFG.apiKey==="YOUR_API_KEY"){$("#app").innerHTML='<div class="card"><h1>Firebase setup needed</h1><p class="mut">Open this file and paste your own Firebase config in the CFG block near the top.</p></div>';return}
+  firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.database();
+  auth.onAuthStateChanged(function(u){
+    if(!u){uid=null;me=null;friends={};blocks={};render();return}
+    uid=u.uid;
+    db.ref("pp/users/"+uid).once("value").then(function(s){
+      me=s.val();
+      if(!me){me={name:(u.email||"player").split("@")[0],emoji:AV[Math.floor(Math.random()*AV.length)],bio:"",dp:""};db.ref("pp/users/"+uid).set(me)}
+      UC[uid]=me;loadSocial();
+      var h=location.hash.replace("#","").toUpperCase();
+      if(h.length===4&&!room)connect(h,false);else render()})})}
+function doAuth(signup){
+  var n=$("#un").value.trim().toLowerCase().replace(/[^a-z0-9_]/g,""),p=$("#pw").value;
+  if(n.length<3||p.length<6){authErr="Username 3+ letters or numbers, password 6+ characters";render();return}
+  authErr="";var em=n+"@playpals.app";
+  (signup?auth.createUserWithEmailAndPassword(em,p):auth.signInWithEmailAndPassword(em,p)).catch(function(e){var c=e.code;authErr=c==="auth/email-already-in-use"?"Username taken, try Log in":(c==="auth/invalid-credential"||c==="auth/wrong-password"||c==="auth/user-not-found")?"Wrong username or password":e.message;render()})}
+function logout(){leave();auth.signOut()}
+function saveMe(){db.ref("pp/users/"+uid).set(me);UC[uid]=me;render()}
+function saveProf(){me.name=($("#pn").value.trim()||me.name).slice(0,14);me.bio=$("#pb").value.slice(0,60);saveMe()}
+function pickE(a){me.emoji=a;saveMe()}
+function setDp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=c.height=80;var x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,80,80);me.dp=c.toDataURL("image/jpeg",.7);saveMe()};im.src=r.result};r.readAsDataURL(f)}
+function push(){if(room)room.emit("state",G);render()}
+function startGame(){
+  var ps=players(),g=G.game,tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
+  var sc={};ps.forEach(function(p){sc[p.id]=0});
+  G={game:g,phase:"play",round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?WORDS.length:g==="wyr"?WYR.length:EMJ.length)};next()}
+function next(){
+  if(!G||G.phase!=="play")return;var ps=players();
+  G.round++;G.solved=null;G.votes={};G.reveal=false;G.log=[];
+  if(G.round>=G.total){G.phase="end";push();return}
+  var i=G.order[G.round];
+  if(G.game==="draw"){db.ref("pp/rooms/"+code+"/draw").remove();G.drawer=ps[G.round%ps.length].id;G.word=WORDS[i];G.deadline=Date.now()+70000}
+  if(G.game==="wyr")G.q=WYR[i];
+  if(G.game==="emoji"){G.e=EMJ[i][0];G.a=EMJ[i][1];G.deadline=Date.now()+45000}
+  push()}
+function handleAct(id,d){
+  if(!G||G.phase!=="play"||blocks[id])return;
+  if(d.t==="guess"&&!G.solved){
+    var ans=G.game==="draw"?G.word:G.a;
+    if(id===G.drawer)return;
+    if(norm(d.v)===norm(ans)){G.scores[id]=(G.scores[id]||0)+10;if(G.drawer)G.scores[G.drawer]=(G.scores[G.drawer]||0)+5;G.solved={id:id};setTimeout(next,2500)}
+    else G.log=G.log.concat([nameOf(id)+": "+String(d.v).slice(0,24)]).slice(-4);
+    push()}
+  if(d.t==="vote"&&G.game==="wyr"&&!G.reveal){G.votes[id]=d.v;if(Object.keys(G.votes).length>=players().length)doReveal();else push()}
+  if(d.t==="skip"&&id===myId){next()}}
+function doReveal(){
+  var a=0,b=0,k;for(k in G.votes){G.votes[k]==="A"?a++:b++}
+  var win=a>=b?"A":"B";if(a===b)win=null;
+  for(k in G.votes){if(win&&G.votes[k]===win)G.scores[k]=(G.scores[k]||0)+1}
+  G.reveal=true;push()}
+function act(d){if(isHost)handleAct(myId,d);else if(room)room.emit("act",d)}
+setInterval(function(){
+  if(!G||G.phase!=="play"||!G.deadline)return;
+  var t=$("#tm");if(t&&!G.solved)t.textContent=Math.max(0,Math.ceil((G.deadline-Date.now())/1000))+"s";
+  if(isHost&&!G.solved&&Date.now()>G.deadline){G.solved={timeout:1};push();setTimeout(next,2500)}},1000);
+/* drawing */
+function ensureCv(){if(cv)return;cv=document.createElement("canvas");cv.width=600;cv.height=600;cx=cv.getContext("2d");cx.lineWidth=7;cx.lineCap="round";cx.strokeStyle="#111";
+  var last=null;
+  function pt(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height}}
+  cv.addEventListener("pointerdown",function(e){if(!G||G.drawer!==myId||G.solved)return;last=pt(e);cv.setPointerCapture(e.pointerId)});
+  cv.addEventListener("pointermove",function(e){if(!last)return;var p=pt(e);var s=[last.x,last.y,p.x,p.y];seg(s);pend.push(s);last=p;if(pend.length===1)setTimeout(flush,70)});
+  cv.addEventListener("pointerup",function(){last=null});}
+function seg(s){cx.beginPath();cx.moveTo(s[0]*600,s[1]*600);cx.lineTo(s[2]*600,s[3]*600);cx.stroke()}
+function flush(){if(pend.length&&room)room.emit("draw",pend);pend=[]}
+function drawSegs(a){if(a==="clear"){cx&&cx.clearRect(0,0,600,600);return}if(Array.isArray(a))a.forEach(seg)}
+function clearCv(){cx.clearRect(0,0,600,600);if(room)room.emit("draw","clear")}
+/* views */
+function shell(h,nav){function b(t,l){return'<button class="'+(tab===t?"on":"")+'" onclick="tab=\''+t+'\';render()">'+l+'</button>'}return h+(nav?'<div class="nav">'+b("play","🎮 Play")+b("fr","👥 Friends")+b("me","🙂 Me")+'</div>':"")}
+function logo(){return '<div class="logo"><span class="dots"><i style="background:#ff4b3a"></i><i style="background:#ffd500"></i><i style="background:#19b45a"></i><i style="background:#2f7bff"></i></span> PlayPals</div>'}
+function vLogin(){var h=location.hash.replace("#","");
+  return shell('<div class="top">'+logo()+'</div><h1>Play with friends, instantly.</h1><p class="mut">'+(h?"You’re joining room <b>"+esc(h)+"</b>. Log in or create an account to enter.":"Create an account to keep your profile and friends.")+'</p><div class="card"><input id="un" maxlength="16" placeholder="Username" autocapitalize="none" autocomplete="username"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">'+(authErr?'<div class="ok" style="color:#ff8a7a">'+esc(authErr)+'</div>':"")+'<button class="btn" onclick="doAuth(false)">Log in</button><br><button class="btn alt" onclick="doAuth(true)">Create account</button></div>')}
+function vHome(){
+  return shell('<div class="top">'+logo()+'<span>'+me.emoji+' '+esc(me.name)+'</span></div><h1>Pick a game</h1><p class="mut">Make a room, share the link, play together.</p>'+
+  Object.keys(GAMES).map(function(k){var g=GAMES[k];return'<button class="g" style="background:'+g.c+'" onclick="newRoom(\''+k+'\')"><span class="e">'+g.e+'</span><span><b>'+g.n+'</b><small>'+g.d+'</small></span></button>'}).join("")+
+  '<h2>Got a code?</h2><div class="row"><input id="jc" maxlength="4" placeholder="ABCD" style="text-transform:uppercase"><button class="btn sm" style="flex:0" onclick="var c=$(\'#jc\').value.trim().toUpperCase();if(c.length===4)connect(c,false)">Join</button></div>',true)}
+function vFriends(){var ids=Object.keys(friends),bl=Object.keys(blocks);ids.concat(bl).forEach(function(i){if(!UC[i])getU(i,function(){render()})});
+  function row(i,x){var u=UC[i]||{name:"…"};return'<div class="pl" onclick="showP(\''+i+'\')"><span class="e">'+av(u)+'</span><b>'+esc(u.name)+'</b><span class="mut">'+x+'</span></div>'}
+  return shell('<div class="top">'+logo()+'</div><h1>Friends</h1><button class="btn" onclick="share(base(),\'Play with me on PlayPals!\')">🔗 Invite a friend</button><h2>Your friends ('+ids.length+')</h2><div class="card">'+(ids.length?ids.map(function(i){return row(i,"")}).join(""):'<span class="mut">No friends yet. In a game, tap a player to see their profile and add them.</span>')+'</div>'+(bl.length?'<h2>Blocked</h2><div class="card">'+bl.map(function(i){return row(i,"Unblock")}).join("")+'</div>':""),true)}
+function vMe(){return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="logout()">Log out</button></div><h1>My profile</h1><div class="card" style="text-align:center"><div>'+av(me,96)+'</div><label class="btn sm" style="margin:10px 6px">Change photo<input type="file" accept="image/*" hidden onchange="setDp(this)"></label>'+(me.dp?'<button class="btn sm alt" onclick="me.dp=\'\';saveMe()">Remove</button>':"")+'<input id="pn" maxlength="14" placeholder="Name" value="'+esc(me.name)+'"><input id="pb" maxlength="60" placeholder="Bio (optional)" value="'+esc(me.bio||"")+'"><div class="em">'+AV.map(function(a){return'<button class="'+(me.emoji===a?"on":"")+'" onclick="pickE(\''+a+'\')">'+a+'</button>'}).join("")+'</div><button class="btn" onclick="saveProf()">Save</button></div>',true)}
+function share(u,t){if(navigator.share){navigator.share({title:"PlayPals",text:t,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link copied")},function(){prompt("Copy this link",u)})}else prompt("Copy this link",u)}
+function plist(){return players().map(function(p){return'<div class="pl" onclick="showP(\''+p.id+'\')"><span class="e">'+av(p)+'</span><b>'+esc(p.name)+(p.me?" (you)":"")+(p.host?" 👑":"")+(blocks[p.id]?" 🚫":"")+'</b><span class="mut">'+(p.me?"":friends[p.id]?"friend":"view ›")+'</span></div>'}).join("")}
+function vLobby(){var g=G?GAMES[G.game]:null,link=base()+"#"+code;
+  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?'<button class="btn" onclick="startGame()">Start game</button>':'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
+function scores(){return'<div class="sc">'+players().map(function(p){return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+'</div>'}).join("")+'</div>'}
+function head(){return'<div class="top"><span class="mut">Round '+(G.round+1)+'/'+G.total+'</span>'+(G.deadline&&!G.solved?'<span class="tm" id="tm">…</span>':'<span></span>')+'</div>'+scores()}
+function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="Type your guess" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
+function sendG(){var i=$("#gi");if(!i||!i.value.trim())return;act({t:"guess",v:i.value});i.value=""}
+function result(ans){if(!G.solved)return"";return G.solved.id?'<div class="ok">✅ '+esc(nameOf(G.solved.id))+' got it! It was “'+esc(ans)+'”</div>':'<div class="ok" style="color:#ff8a7a">⏰ Time’s up! It was “'+esc(ans)+'”</div>'}
+function vDraw(){var d=G.drawer===myId;
+  return head()+'<div class="card"><div class="mut">'+(d?"You are drawing":esc(nameOf(G.drawer))+" is drawing")+'</div>'+(d?'<div class="mask">'+esc(G.word)+'</div>':'<div class="mask">'+(G.solved?esc(G.word):G.word.replace(/./g,"_ ").trim())+'</div>')+'</div><div id="cvh"></div>'+(d&&!G.solved?'<button class="btn alt" style="margin-top:10px" onclick="clearCv()">Clear</button>':"")+result(G.word)+(d?"":guessBox())+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'}
+function vWyr(){var q=G.q,my=G.votes[myId],n=players().length,a=0,b=0,k;for(k in G.votes){G.votes[k]==="A"?a++:b++}var tot=a+b||1;
+  function o(v,i,c){var pc=Math.round((v==="A"?a:b)/tot*100),who=players().filter(function(p){return G.votes[p.id]===v}).map(function(p){return p.emoji}).join(" ");
+    return'<button class="opt" style="background:'+c+(my===v?";outline:4px solid #fff":"")+'" '+(my||G.reveal?"disabled":"")+' onclick="act({t:\'vote\',v:\''+v+'\'})">'+(G.reveal?'<div class="f" style="width:'+pc+'%"></div>':"")+'<span>'+esc(q[i])+(G.reveal?" · "+pc+"%<br>"+who:"")+'</span></button>'}
+  return head()+'<h1 style="text-align:center">Would you rather…</h1>'+o("A",0,"#ffd500")+'<div class="mut" style="text-align:center">or</div><br>'+o("B",1,"#c9f03c")+
+   (G.reveal?(isHost?'<button class="btn" onclick="next()">Next →</button>':'<p class="mut" style="text-align:center">Waiting for the host…</p>')+'<div class="ok">Majority pick = +1 point</div>':'<p class="mut" style="text-align:center">'+Object.keys(G.votes).length+'/'+n+' voted'+(isHost&&Object.keys(G.votes).length?' · <a href="#" onclick="doReveal();return false" style="color:#c9f03c">Reveal now</a>':"")+'</p>')}
+function vEmoji(){return head()+'<div class="card"><div class="mut" style="text-align:center">Movie, place or word?</div><div class="big">'+G.e+'</div></div>'+result(G.a)+guessBox()+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'+(isHost&&!G.solved?'<button class="btn alt" style="margin-top:10px" onclick="next()">Skip</button>':"")}
+function vEnd(){var ps=players().slice().sort(function(a,b){return(G.scores[b.id]||0)-(G.scores[a.id]||0)}),w=ps[0];
+  return'<div class="top">'+logo()+'</div><h1>🏆 '+esc(w.name)+' wins!</h1><div class="card">'+ps.map(function(p,i){return'<div class="pl"><span class="e">'+p.emoji+'</span><b>'+(i+1)+'. '+esc(p.name)+'</b><b style="flex:0">'+(G.scores[p.id]||0)+'</b></div>'}).join("")+'</div><button class="btn" onclick="share(base(),\''+esc(w.name)+' won '+GAMES[G.game].n+' on PlayPals! Beat me 😎\')">📤 Share result</button><br>'+(isHost?'<button class="btn alt" onclick="G={game:G.game,phase:\'lobby\'};push()">Play again</button><br>':"")+'<button class="btn alt" onclick="leave()">Home</button>'}
+function render(){
+  var app=$("#app"),gi=$("#gi"),v=gi?gi.value:"",f=gi&&document.activeElement===gi,h;
+  if(!me)h=vLogin();
+  else if(!room)h=tab==="fr"?vFriends():tab==="me"?vMe():vHome();
+  else if(!G||G.phase==="lobby")h=vLobby();
+  else if(G.phase==="end")h=vEnd();
+  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():vEmoji())}
+  app.innerHTML=h;
+  var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
+  if(G&&G.phase==="lobby")lastRound=-9;
+  var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}}
+authInit();if(db)render();
+</script></body></html>
