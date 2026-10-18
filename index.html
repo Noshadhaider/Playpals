@@ -79,6 +79,12 @@ function fb(c){
     leave:function(){L.forEach(function(x){x[0].off(x[1],x[2])});R.child("players/"+uid).remove();if(isHost)R.remove()}}}
 function nG(g){g.log=g.log||[];g.votes=g.votes||{};g.scores=g.scores||{};g.skips=g.skips||{};g.used=g.used||[];g.lives=g.lives||{};return g}
 function connect(c,host){
+  if(host)return doConnect(c,true,false);
+  db.ref("pp/rooms/"+c+"/host").once("value").then(function(s){var h=s.val();
+    if(h===uid)return doConnect(c,true,true);
+    if(!h){alert("Ye room nahi mila ya band ho chuka hai");history.replaceState(null,"",base());render();return}
+    doConnect(c,false,false)})}
+function doConnect(c,host,re){
   if(room){try{room.leave()}catch(e){}}
   code=c;isHost=host;G=null;peers=[];myId=uid;room=fb(c);
   room.on("state",function(m){if(isHost)return;G=nG(m.data);render()});
@@ -86,12 +92,25 @@ function connect(c,host){
   room.on("draw",function(m){if(!m.isMe&&!blocks[m.peer])drawSegs(m.data)});
   room.onPeers(function(ch){peers=ch.peers.map(function(p){var q=p.presence||{};return{id:p.peer,name:q.name||"Guest",emoji:q.emoji||"🙂",dp:q.dp||"",host:!!q.host,me:p.isMe}});if(isHost&&G&&ch.joined.length)room.emit("state",G);render()});
   room.presence({name:me.name,emoji:me.emoji,dp:me.dp||"",host:host});
-  if(host&&pendGame){G={game:pendGame,phase:"lobby"};pendGame=null;room.emit("state",G)}
+  if(host&&pendGame){db.ref("pp/rooms/"+c+"/host").set(uid);G={game:pendGame,phase:"lobby"};pendGame=null;room.emit("state",G)}else if(host&&re){db.ref("pp/rooms/"+c+"/state").once("value").then(function(s){var v=s.val();if(v){G=nG(v);render()}})}
   render()}
 function newRoom(game){pendGame=game;var c="";for(var i=0;i<4;i++)c+="ABCDEFGHJKLMNPQRSTUVWXYZ".charAt(Math.floor(Math.random()*24));connect(c,true)}
 function leave(){try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
 function av(p,s){s=s||34;var d=p.dp&&String(p.dp).indexOf("data:image/")===0;return d?'<img src="'+esc(p.dp)+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover">':'<span style="font-size:'+Math.round(s*.8)+'px">'+esc(p.emoji||"🙂")+'</span>'}
+var sentInv={},invs={};
+function invList(){var ids=Object.keys(friends).filter(function(i){return!blocks[i]});
+  if(!ids.length)return'<p class="mut">Abhi koi friend nahi. Friends tab me ID se add karo.</p>';
+  return ids.map(function(i){var u=UC[i];if(!u){getU(i,function(){render()});u={name:"…"}}
+    var inR=players().some(function(p){return p.id===i});
+    return'<div class="pl"><span class="e">'+av(u)+'</span><b>'+esc(u.name)+'</b>'+(inR?'<span class="mut">In room</span>':sentInv[i]?'<span class="mut">Sent ✓</span>':'<button class="btn sm" style="flex:0" onclick="invite(\''+i+'\')">Invite</button>')+'</div>'}).join("")}
+function invite(i){sentInv[i]=1;db.ref("pp/invites/"+i+"/"+code).set({from:me.name,game:G?G.game:"",t:Date.now()});render()}
+function dropInv(c){db.ref("pp/invites/"+uid+"/"+c).remove()}
+function joinInv(c){dropInv(c);connect(c,false)}
+function invBanner(){var o="";Object.keys(invs).forEach(function(c){var v=invs[c];if(!v||Date.now()-v.t>600000)return;var g=GAMES[v.game]||{e:"🎮",n:"game"};
+  o+='<div class="card" style="margin:6px 0;border:2px solid var(--lime)"><b>'+esc(v.from)+'</b> ne '+g.e+' '+g.n+' me invite kiya<div class="row" style="margin-top:8px"><button class="btn sm" onclick="joinInv(\''+c+'\')">Join</button><button class="btn sm alt" onclick="dropInv(\''+c+'\')">Reject</button></div></div>'});
+  return o?'<div style="position:fixed;top:env(safe-area-inset-top,0px);left:8px;right:8px;z-index:60">'+o+'</div>':""}
 function loadSocial(){
+  db.ref("pp/invites/"+uid).on("value",function(s){invs=s.val()||{};render()});
   friends=LS.get("ppfr_"+uid,{});blocks=LS.get("ppbl_"+uid,{});
   db.ref("pp/friends/"+uid).on("value",function(s){friends=s.val()||{};LS.set("ppfr_"+uid,friends);render()});
   db.ref("pp/blocks/"+uid).on("value",function(s){blocks=s.val()||{};LS.set("ppbl_"+uid,blocks);render()})}
@@ -170,9 +189,9 @@ function next(){
   G.round++;G.solved=null;G.votes={};G.reveal=false;G.log=[];
   if(G.round>=G.total){G.phase="end";push();return}
   var i=G.order[G.round];
-  if(G.game==="draw"){db.ref("pp/rooms/"+code+"/draw").remove();G.drawer=ps[G.round%ps.length].id;G.word=WORDS[i];G.deadline=Date.now()+70000}
+  if(G.game==="draw"){db.ref("pp/rooms/"+code+"/draw").remove();G.drawer=ps[G.round%ps.length].id;G.word=WORDS[i];G.deadline=Date.now()+90000}
   if(G.game==="wyr")G.q=WYR[i];
-  if(G.game==="emoji"){G.e=EMJ[i][0];G.a=EMJ[i][1];G.deadline=Date.now()+45000}
+  if(G.game==="emoji"){G.e=EMJ[i][0];G.a=EMJ[i][1];G.deadline=Date.now()+60000}
   push()}
 function handleAct(id,d){if(G&&G.game==="chain"&&G.phase==="play"&&!blocks[id])return chainAct(id,d);
   if(!G||G.phase!=="play"||blocks[id])return;
@@ -183,7 +202,7 @@ function handleAct(id,d){if(G&&G.game==="chain"&&G.phase==="play"&&!blocks[id])r
     else G.log=G.log.concat([nameOf(id)+": "+String(d.v).slice(0,24)]).slice(-4);
     push()}
   if(d.t==="vote"&&G.game==="wyr"&&!G.reveal){G.votes[id]=d.v;if(Object.keys(G.votes).length>=players().length)doReveal();else push()}
-  if(d.t==="skip"&&G.game==="draw"&&id===G.drawer&&!G.solved){G.skips=G.skips||{};if(G.skips[id])return;G.skips[id]=1;var i;do{i=Math.floor(Math.random()*WORDS.length)}while(WORDS[i]===G.word);G.word=WORDS[i];G.deadline=Date.now()+70000;G.log=[nameOf(id)+" ne word skip kiya"];db.ref("pp/rooms/"+code+"/draw").remove();room.emit("draw","clear");push()}}
+  if(d.t==="skip"&&G.game==="draw"&&id===G.drawer&&!G.solved){G.skips=G.skips||{};if(G.skips[id])return;G.skips[id]=1;var i;do{i=Math.floor(Math.random()*WORDS.length)}while(WORDS[i]===G.word);G.word=WORDS[i];G.deadline=Date.now()+90000;G.log=[nameOf(id)+" ne word skip kiya"];db.ref("pp/rooms/"+code+"/draw").remove();room.emit("draw","clear");push()}}
 function doReveal(){
   var a=0,b=0,k;for(k in G.votes){G.votes[k]==="A"?a++:b++}
   var win=a>=b?"A":"B";if(a===b)win=null;
@@ -211,13 +230,13 @@ function drawSegs(a){if(a==="clear"){cx&&cx.clearRect(0,0,600,600);return}if(Arr
 function clearCv(){cx.clearRect(0,0,600,600);if(room)room.emit("draw","clear")}
 /* word chain */
 function catPick(){if(!G||G.game!=="chain")return"";var c=G.cat||"fruits";
-  return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">Sirf isi category ke words, pichhle word ke last letter se, repeat nahi. 20s per turn. 3 galat jawab ya time out = out. Koi out ho to naya round aur nayi category.</p></div>'}
+  return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">Sirf isi category ke words, pichhle word ke last letter se, repeat nahi. 30s per turn. 3 galat jawab ya time out = out. Koi out ho to naya round aur nayi category.</p></div>'}
 function setCat(k){G.cat=k;push()}
 function startChain(){var ps=players(),sc={},lv={};ps.forEach(function(p){sc[p.id]=0;lv[p.id]=3});
-  G={game:"chain",phase:"play",cat:G.cat||"fruits",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,rnd:1,deadline:Date.now()+20000,log:[]};push()}
+  G={game:"chain",phase:"play",cat:G.cat||"fruits",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,rnd:1,deadline:Date.now()+30000,log:[]};push()}
 function nextTurn(){var ps=players(),i=0,k,p;for(k=0;k<ps.length;k++)if(ps[k].id===G.turn)i=k;
   for(k=1;k<=ps.length;k++){p=ps[(i+k)%ps.length];if((G.lives[p.id]||0)>0){G.turn=p.id;break}}
-  G.deadline=Date.now()+20000}
+  G.deadline=Date.now()+30000}
 function chainEnd(){var a=players().filter(function(p){return(G.lives[p.id]||0)>0}).length;return a===0||(G.multi&&a<2)}
 function newRound(){var ks=Object.keys(CATS).filter(function(k){return k!==G.cat}),k=ks[Math.floor(Math.random()*ks.length)];
   G.cat=k;G.used=[];G.need="";G.rnd=(G.rnd||1)+1;G.log=G.log.concat(["🔄 Round "+G.rnd+": "+CATS[k].e+" "+CATS[k].n]).slice(-4)}
@@ -259,7 +278,7 @@ function vMe(){return shell('<div class="top">'+logo()+'<button class="btn sm al
 function share(u,t){if(navigator.share){navigator.share({title:"PlayPals",text:t,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link copied")},function(){prompt("Copy this link",u)})}else prompt("Copy this link",u)}
 function plist(){return players().map(function(p){return'<div class="pl" onclick="showP(\''+p.id+'\')"><span class="e">'+av(p)+'</span><b>'+esc(p.name)+(p.me?" (you)":"")+(p.host?" 👑":"")+(blocks[p.id]?" 🚫":"")+'</b><span class="mut">'+(p.me?"":friends[p.id]?"friend":"view ›")+'</span></div>'}).join("")}
 function vLobby(){var g=G?GAMES[G.game]:null,link=base()+"#"+code;
-  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+'<h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?(players().length<2?'<button class="btn alt" disabled>Start game</button><p class="mut" style="text-align:center">Kam se kam 2 players chahiye. Dost ko invite link bhejo.</p>':'<button class="btn" onclick="startGame()">Start game</button>'):'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
+  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+'<h2>Invite friends</h2><div class="card">'+invList()+'</div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?(players().length<2?'<button class="btn alt" disabled>Start game</button><p class="mut" style="text-align:center">Kam se kam 2 players chahiye. Dost ko invite link bhejo.</p>':'<button class="btn" onclick="startGame()">Start game</button>'):'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
 function scores(){return'<div class="sc">'+players().map(function(p){return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+'</div>'}).join("")+'</div>'}
 function head(){return'<div class="top"><span class="mut">Round '+(G.round+1)+'/'+G.total+'</span>'+(G.deadline&&!G.solved?'<span class="tm" id="tm">…</span>':'<span></span>')+'</div>'+scores()}
 function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="'+(G.game==="chain"?"Type a word":"Type your guess")+'" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
@@ -282,6 +301,7 @@ function render(){
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
   else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():vEmoji())}
+  if(me&&!room)h=invBanner()+h;
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
   if(G&&G.phase==="lobby")lastRound=-9;
