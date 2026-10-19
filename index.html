@@ -31,13 +31,24 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 .mut{color:var(--mut);font-size:14px}.log{font-size:14px;color:#bbb;min-height:20px}
 .ov{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:9}.pl{cursor:pointer}.sc div{cursor:pointer;display:flex;align-items:center;gap:5px}
 .ch{display:flex;flex-wrap:wrap;gap:8px}.ch button{border:2px solid transparent;border-radius:999px;background:#222;color:#fff;padding:9px 14px;font-size:15px;font-weight:700}.ch .on{border-color:var(--lime);color:var(--lime)}
-</style></head><body><div id="app"></div><div id="ov"></div>
+.pop{position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:80;padding:16px}
+.pop .card{width:min(92%,360px);text-align:center;border:2px solid var(--lime);margin:0;animation:pin .18s ease-out}
+.pop h2{color:#fff;font-size:20px;margin:8px 0}.pop p{margin:8px 0}
+@keyframes pin{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+</style></head><body><div id="app"></div><div id="ov"></div><div id="inv"></div>
 <script>
 var $=function(s){return document.querySelector(s)};
 var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 var AV=["🐢","🦊","🐸","🐼","🦁","🐙","🐯","🐵"];
 var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"},who:{n:"Who Wrote It?",e:"🕵️",c:"#ff9ecb",d:"Anonymous answers, guess the writer"}};
 var WORDS="apple banana house car tree sun moon fish cat dog bird flower pizza burger cake phone clock chair bed book ball boat plane train bike hat shoe glasses cup door key umbrella star heart rain snowman guitar camera robot rocket pencil candle bridge".split(" ");
+var DIFF={easy:{n:"Easy",e:"🟢",t:90,p:10,d:"Aasan cheezein (apple, cat, sun). 90 sec, sahi guess +10 points."},medium:{n:"Medium",e:"🟡",t:75,p:15,d:"Thode mushkil (windmill, volcano, pirate). 75 sec, sahi guess +15 points."},hard:{n:"Hard",e:"🔴",t:60,p:20,d:"Bohot mushkil (gravity, orchestra, echo). 60 sec, sahi guess +20 points."}};
+var WORDS_D={easy:WORDS,
+medium:"bicycle butterfly elephant giraffe volcano windmill lighthouse pyramid scissors spider tractor helicopter castle dinosaur fireworks penguin kangaroo ladder mountain rainbow sandwich telescope tornado trumpet waterfall backpack compass cactus igloo skateboard sunflower submarine hammer parachute pirate scarecrow vampire ambulance campfire dragon".split(" "),
+hard:"gravity nightmare earthquake photograph electricity imagination pollution friendship silence freedom memory laughter magician detective astronaut quicksand skeleton jellyfish orchestra laboratory microscope avalanche eclipse tsunami boomerang chandelier accordion architect carnival hurricane internet jealousy teamwork shadow echo".split(" ")};
+function wpool(d){return WORDS_D[d]||WORDS}
+function dtime(){return((DIFF[G&&G.diff]||DIFF.easy).t)*1000}
+function dtag(){var x=DIFF[G&&G.diff]||DIFF.easy;return x.e+" "+x.n}
 var WYR=[["Fly like a bird","Swim like a fish"],["Always be late","Always be early"],["Eat pizza forever","Eat burgers forever"],["Have no phone for a week","Have no friends for a week"],["Be invisible","Read minds"],["Live in the mountains","Live by the sea"],["Never sleep","Never eat sweets"],["Talk to animals","Speak every language"],["Be super strong","Be super fast"],["Have a pet dragon","Have a pet robot"],["Watch only comedy","Watch only action"],["Travel to the past","Travel to the future"],["Sing everything you say","Dance everywhere you go"],["Have unlimited ice cream","Have unlimited pizza"],["Be famous","Be rich"],["Always be hot","Always be cold"]];
 var EMJ=[["🦁👑","lion king"],["🕷️👨","spiderman"],["❄️👸","frozen"],["🚢🧊","titanic"],["🐠🔍","finding nemo"],["🍕🐢","ninja turtles"],["🧙⚡","harry potter"],["🌧️☔","rain"],["📱🔋","phone"],["🍎📱","apple"],["☀️🏖️","beach"],["⚽🏆","football"],["🎂🎈","birthday"],["🚗💨","fast car"],["🐝🍯","honey"],["🌙⭐","night"],["🏏🇮🇳","cricket"],["🦇🧔","batman"],["🍫🏭","chocolate factory"],["👻🏠","haunted house"]];
 var CATS={
@@ -102,7 +113,7 @@ function doConnect(c,host,re){
 function newRoom(game){pendGame=game;var c="";for(var i=0;i<4;i++)c+="ABCDEFGHJKLMNPQRSTUVWXYZ".charAt(Math.floor(Math.random()*24));connect(c,true)}
 function leave(){clearInv();try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
 function av(p,s){s=s||34;var d=p.dp&&String(p.dp).indexOf("data:image/")===0;return d?'<img src="'+esc(p.dp)+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover">':'<span style="font-size:'+Math.round(s*.8)+'px">'+esc(p.emoji||"🙂")+'</span>'}
-var sentInv={},invs={},invAt={},missed={},invW={},INV_MS=15000;
+var sentInv={},invs={},invAt={},missed={},invW={},INV_MS=30000,leaveAsk=null,freqs={},fsent={};
 function cd(at){return Math.max(0,Math.ceil((INV_MS-(Date.now()-at))/1000))}
 function tickCd(){var a=document.querySelectorAll(".invcd"),i;for(i=0;i<a.length;i++)a[i].textContent=cd(+a[i].getAttribute("data-at"))}
 function clearInv(){Object.keys(sentInv).forEach(function(k){try{if(invW[k])invW[k].ref.off("value",invW[k].f);db.ref("pp/invites/"+k+"/"+sentInv[k].c).remove()}catch(e){}});sentInv={};invW={};missed={}}
@@ -112,24 +123,46 @@ function invList(){var ids=Object.keys(friends).filter(function(i){return!blocks
     var inR=players().some(function(p){return p.id===i});
     return'<div class="pl"><span class="e">'+av(u)+'</span><b>'+esc(u.name)+'</b>'+(inR?'<span class="mut">In room</span>':sentInv[i]?'<span class="mut">Sent ✓ <b class="invcd" data-at="'+sentInv[i].t+'">'+cd(sentInv[i].t)+'</b>s</span>':'<button class="btn sm" style="flex:0" onclick="invite(\''+i+'\')">'+(missed[i]?'Invite again':'Invite')+'</button>')+'</div>'}).join("")}
 function invite(i){if(sentInv[i]||!code)return;var t=Date.now(),c=code,ref=db.ref("pp/invites/"+i+"/"+c),seen=false;
-  sentInv[i]={t:t,c:c};delete missed[i];ref.set({from:me.name,game:G?G.game:"",t:t});
+  sentInv[i]={t:t,c:c};delete missed[i];ref.set({from:me.name,fid:uid,game:G?G.game:"",t:t});
   var f=function(s){if(s.val()){seen=true;return}if(!seen)return;ref.off("value",f);delete invW[i];if(sentInv[i]&&sentInv[i].t===t){delete sentInv[i];render()}};
   ref.on("value",f);invW[i]={ref:ref,f:f};render()}
-function dropInv(c){db.ref("pp/invites/"+uid+"/"+c).remove()}
-function joinInv(c){dropInv(c);connect(c,false)}
-function invBanner(){var o="";Object.keys(invs).forEach(function(c){var v=invs[c];if(!v||!invAt[c]||Date.now()-invAt[c].at>INV_MS)return;var g=GAMES[v.game]||{e:"🎮",n:"game"};
-  o+='<div class="card" style="margin:6px 0;border:2px solid var(--lime)"><b>'+esc(v.from)+'</b> ne '+g.e+' '+g.n+' me invite kiya <span class="mut">(<b class="invcd" data-at="'+invAt[c].at+'">'+cd(invAt[c].at)+'</b>s)</span><div class="row" style="margin-top:8px"><button class="btn sm" onclick="joinInv(\''+c+'\')">Join</button><button class="btn sm alt" onclick="dropInv(\''+c+'\')">Reject</button></div></div>'});
-  return o?'<div style="position:fixed;top:env(safe-area-inset-top,0px);left:8px;right:8px;z-index:60">'+o+'</div>':""}
+function dropInv(c){delete invs[c];if(leaveAsk===c)leaveAsk=null;try{db.ref("pp/invites/"+uid+"/"+c).remove()}catch(e){}}
+function cancelInv(c){dropInv(c);render()}
+function stayInv(){leaveAsk=null;render()}
+function joinInv(c){if(room&&code!==c){leaveAsk=c;render();return}doJoin(c)}
+function doJoin(c){leaveAsk=null;var same=room&&code===c;dropInv(c);if(same){render();return}if(room)leave();connect(c,false)}
+function uInfo(id,d){var u=UC[id];if(u)return u;getU(id,function(){render()});return d}
+function popups(){var n=Date.now(),c=Object.keys(invs).filter(function(k){var v=invs[k];return v&&invAt[k]&&n-invAt[k].at<=INV_MS&&!(v.fid&&blocks[v.fid])})[0];
+  if(c)return invPop(c);
+  if(!(G&&G.phase==="play")){var f=Object.keys(freqs)[0];if(f)return frPop(f)}
+  return""}
+function invPop(c){var v=invs[c],g=GAMES[v.game]||{e:"🎮",n:"a game"},u=v.fid?uInfo(v.fid,{name:v.from,emoji:"🎮"}):{name:v.from,emoji:"🎮"};
+  if(leaveAsk===c&&room){var cur=G&&GAMES[G.game]?GAMES[G.game].e+" "+GAMES[G.game].n:"current room";
+    return'<div class="pop"><div class="card"><div style="font-size:44px">⚠️</div><h2>Are you sure you want to leave the game?</h2><p class="mut">Abhi aap <b>'+cur+'</b> me ho. Join karne par ye game chhod dena hoga.'+(isHost?'<br><b style="color:#ff8a7a">Aap host ho, isliye room sab ke liye band ho jayega.</b>':"")+'</p><div class="row"><button class="btn sm" onclick="doJoin(\''+c+'\')">Yes, leave &amp; join</button><button class="btn sm alt" onclick="stayInv()">No, stay</button></div></div></div>'}
+  return'<div class="pop"><div class="card"><div style="font-size:44px">🎮</div><h2>Game Invitation</h2><div>'+av(u,64)+'</div><p><b>'+esc(u.name)+'</b> ne aapko '+g.e+' <b>'+g.n+'</b> me invite kiya hai <span class="mut">(<b class="invcd" data-at="'+invAt[c].at+'">'+cd(invAt[c].at)+'</b>s)</span></p>'+(room?'<p class="mut">Aap abhi ek game/room me ho.</p>':"")+'<div class="row"><button class="btn sm" onclick="joinInv(\''+c+'\')">Join</button><button class="btn sm alt" onclick="cancelInv(\''+c+'\')">Cancel</button></div></div></div>'}
+function frPop(f){var u=uInfo(f,{name:"Someone",emoji:"🙂"});
+  return'<div class="pop"><div class="card"><div style="font-size:44px">👋</div><h2>Friend Request</h2><div>'+av(u,64)+'</div><p><b>'+esc(u.name)+'</b> ne aapko friend request bheji hai</p><div class="row"><button class="btn sm" onclick="acceptFr(\''+f+'\')">Accept</button><button class="btn sm alt" onclick="declineFr(\''+f+'\')">Decline</button></div></div></div>'}
+function frReqs(){var ks=Object.keys(freqs);if(!ks.length)return"";
+  return'<h2>Friend requests ('+ks.length+')</h2><div class="card">'+ks.map(function(k){var u=uInfo(k,{name:"…"});return'<div class="pl"><span class="e" onclick="showP(\''+k+'\')">'+av(u)+'</span><b>'+esc(u.name)+'</b><button class="btn sm" style="flex:0" onclick="acceptFr(\''+k+'\')">Accept</button><button class="btn sm alt" style="flex:0" onclick="declineFr(\''+k+'\')">✕</button></div>'}).join("")+'</div>'}
+function frBtn(id){return freqs[id]?'<button class="btn" onclick="acceptFr(\''+id+'\')">✅ Accept friend request</button>':fsent[id]?'<button class="btn alt" disabled>⏳ Request sent</button>':'<button class="btn" onclick="addFr(\''+id+'\')">+ Add friend</button>'}
 function loadSocial(){
   db.ref("pp/invites/"+uid).on("value",function(s){invs=s.val()||{};Object.keys(invs).forEach(function(c){var v=invs[c];if(!v)return;if(Date.now()-v.t>600000){delete invs[c];dropInv(c);return}if(!invAt[c]||invAt[c].t!==v.t)invAt[c]={t:v.t,at:Date.now()}});render()});
   friends=LS.get("ppfr_"+uid,{});blocks=LS.get("ppbl_"+uid,{});
   db.ref("pp/friends/"+uid).on("value",function(s){friends=s.val()||{};LS.set("ppfr_"+uid,friends);render()});
-  db.ref("pp/blocks/"+uid).on("value",function(s){blocks=s.val()||{};LS.set("ppbl_"+uid,blocks);render()})}
+  db.ref("pp/blocks/"+uid).on("value",function(s){blocks=s.val()||{};LS.set("ppbl_"+uid,blocks);render()});
+  db.ref("pp/freq/"+uid).on("value",function(s){freqs=s.val()||{};Object.keys(freqs).forEach(function(k){if(blocks[k]||friends[k]){db.ref("pp/freq/"+uid+"/"+k).remove();delete freqs[k]}});render()});
+  db.ref("pp/facc/"+uid).on("value",function(s){var v=s.val()||{};Object.keys(v).forEach(function(k){db.ref("pp/friends/"+uid+"/"+k).set(true);db.ref("pp/facc/"+uid+"/"+k).remove()})})}
 var fresh={};
 function getU(id,cb){var c=UC[id];
   if(c){cb(c);if(!fresh[id]&&db){fresh[id]=1;db.ref("pp/users/"+id).once("value").then(function(s){var v=s.val();if(v){UC[id]=v;LS.set("ppuc",UC)}})}return}
   db.ref("pp/users/"+id).once("value").then(function(s){UC[id]=s.val()||{name:"User",emoji:"🙂"};LS.set("ppuc",UC);cb(UC[id])})}
-function addFr(id){db.ref("pp/friends/"+uid+"/"+id).set(true);closeP()}
+function addFr(id){if(!uid||id===uid||friends[id]||fsent[id]||blocks[id])return;
+  var ref=db.ref("pp/freq/"+id+"/"+uid),seen=false;fsent[id]=1;
+  var f=function(s){if(s.val()){seen=true;return}if(!seen)return;ref.off("value",f);delete fsent[id];render()};
+  ref.set({from:me.name,t:Date.now()}).then(function(){ref.on("value",f)},function(){delete fsent[id];alert("Request nahi gayi, dobara try karo");render()});
+  showP(id)}
+function acceptFr(k){db.ref("pp/friends/"+uid+"/"+k).set(true);db.ref("pp/facc/"+k+"/"+uid).set(true);db.ref("pp/freq/"+uid+"/"+k).remove();delete freqs[k];closeP();render()}
+function declineFr(k){db.ref("pp/freq/"+uid+"/"+k).remove();delete freqs[k];render()}
 function rmFr(id){db.ref("pp/friends/"+uid+"/"+id).remove();closeP()}
 function blk(id){db.ref("pp/blocks/"+uid+"/"+id).set(true);db.ref("pp/friends/"+uid+"/"+id).remove();closeP()}
 function unblk(id){db.ref("pp/blocks/"+uid+"/"+id).remove();closeP()}
@@ -192,15 +225,15 @@ function pickE(a){me.emoji=a;saveMe()}
 function setDp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=c.height=80;var x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,80,80);me.dp=c.toDataURL("image/jpeg",.7);saveMe()};im.src=r.result};r.readAsDataURL(f)}
 function push(){if(room)room.emit("state",G);render()}
 function startGame(){if(players().length<minP())return;if(G.game==="who")return startWho();if(G.game==="chain")return startChain();
-  var ps=players(),g=G.game,tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
+  var ps=players(),g=G.game,df=G.diff||"easy",tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
   var sc={};ps.forEach(function(p){sc[p.id]=0});
-  G={game:g,phase:"play",round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?WORDS.length:g==="wyr"?WYR.length:EMJ.length)};next()}
+  G={game:g,phase:"play",diff:df,round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?wpool(df).length:g==="wyr"?WYR.length:EMJ.length)};next()}
 function next(){
   if(!G||G.phase!=="play")return;var ps=players();
   G.round++;G.solved=null;G.votes={};G.reveal=false;G.log=[];
   if(G.round>=G.total){G.phase="end";push();return}
   var i=G.order[G.round];
-  if(G.game==="draw"){db.ref("pp/rooms/"+code+"/draw").remove();G.drawer=ps[G.round%ps.length].id;G.word=WORDS[i];G.deadline=Date.now()+90000}
+  if(G.game==="draw"){db.ref("pp/rooms/"+code+"/draw").remove();G.drawer=ps[G.round%ps.length].id;G.word=wpool(G.diff)[i];G.deadline=Date.now()+dtime()}
   if(G.game==="wyr")G.q=WYR[i];
   if(G.game==="emoji"){G.e=EMJ[i][0];G.a=EMJ[i][1];G.deadline=Date.now()+60000}
   push()}
@@ -210,11 +243,11 @@ function handleAct(id,d){if(G&&G.game==="chain"&&G.phase==="play"&&!blocks[id])r
   if(d.t==="guess"&&!G.solved){
     var ans=G.game==="draw"?G.word:G.a;
     if(id===G.drawer)return;
-    if(norm(d.v)===norm(ans)){G.scores[id]=(G.scores[id]||0)+10;if(G.drawer)G.scores[G.drawer]=(G.scores[G.drawer]||0)+5;G.solved={id:id};setTimeout(next,2500)}
+    if(norm(d.v)===norm(ans)){var pp=(DIFF[G.diff]||DIFF.easy).p;G.scores[id]=(G.scores[id]||0)+pp;if(G.drawer)G.scores[G.drawer]=(G.scores[G.drawer]||0)+Math.round(pp/2);G.solved={id:id};setTimeout(next,2500)}
     else G.log=G.log.concat([nameOf(id)+": "+String(d.v).slice(0,24)]).slice(-4);
     push()}
   if(d.t==="vote"&&G.game==="wyr"&&!G.reveal){G.votes[id]=d.v;if(Object.keys(G.votes).length>=players().length)doReveal();else push()}
-  if(d.t==="skip"&&G.game==="draw"&&id===G.drawer&&!G.solved){G.skips=G.skips||{};if(G.skips[id])return;G.skips[id]=1;var i;do{i=Math.floor(Math.random()*WORDS.length)}while(WORDS[i]===G.word);G.word=WORDS[i];G.deadline=Date.now()+90000;G.log=[nameOf(id)+" ne word skip kiya"];db.ref("pp/rooms/"+code+"/draw").remove();room.emit("draw","clear");push()}}
+  if(d.t==="skip"&&G.game==="draw"&&id===G.drawer&&!G.solved){G.skips=G.skips||{};if(G.skips[id])return;G.skips[id]=1;var P=wpool(G.diff),i;do{i=Math.floor(Math.random()*P.length)}while(P[i]===G.word);G.word=P[i];G.deadline=Date.now()+dtime();G.log=[nameOf(id)+" ne word skip kiya"];db.ref("pp/rooms/"+code+"/draw").remove();room.emit("draw","clear");push()}}
 function doReveal(){
   var a=0,b=0,k;for(k in G.votes){G.votes[k]==="A"?a++:b++}
   var win=a>=b?"A":"B";if(a===b)win=null;
@@ -245,6 +278,9 @@ function clearCv(){cx.clearRect(0,0,600,600);if(room)room.emit("draw","clear")}
 function catPick(){if(!G||G.game!=="chain")return"";var c=G.cat||"all";
   return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">'+(c==='all'?'All me koi bhi word chalega, bas pichhle word ke last letter se shuru ho aur repeat na ho.':'Sirf isi category ke words, pichhle word ke last letter se, repeat nahi.')+' 30s per turn. 3 galat jawab ya time out = out. Koi out ho to naya round aur nayi category.</p></div>'}
 function setCat(k){G.cat=k;push()}
+function diffPick(){if(!G||G.game!=="draw")return"";var d=G.diff||"easy";
+  return'<h2>Difficulty</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(DIFF).map(function(k){return'<button class="'+(k===d?"on":"")+'" onclick="setDiff(\''+k+'\')">'+DIFF[k].e+" "+DIFF[k].n+'</button>'}).join("")+'</div>':'<b>'+DIFF[d].e+" "+DIFF[d].n+'</b>')+'<p class="mut">'+DIFF[d].d+'</p></div>'}
+function setDiff(k){if(!isHost||!DIFF[k])return;G.diff=k;push()}
 function startChain(){var ps=players(),sc={},lv={};ps.forEach(function(p){sc[p.id]=0;lv[p.id]=3});
   G={game:"chain",phase:"play",cat:G.cat||"all",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,rnd:1,deadline:Date.now()+30000,log:[]};push()}
 function nextTurn(){var ps=players(),i=0,k,p;for(k=0;k<ps.length;k++)if(ps[k].id===G.turn)i=k;
@@ -291,14 +327,15 @@ function vMe(){return shell('<div class="top">'+logo()+'<button class="btn sm al
 function share(u,t){if(navigator.share){navigator.share({title:"PlayPals",text:t,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link copied")},function(){prompt("Copy this link",u)})}else prompt("Copy this link",u)}
 function plist(){return players().map(function(p){return'<div class="pl" onclick="showP(\''+p.id+'\')"><span class="e">'+av(p)+'</span><b>'+esc(p.name)+(p.me?" (you)":"")+(p.host?" 👑":"")+(blocks[p.id]?" 🚫":"")+'</b><span class="mut">'+(p.me?"":friends[p.id]?"friend":"view ›")+'</span></div>'}).join("")}
 function vLobby(){var g=G?GAMES[G.game]:null,link=base()+"#"+code;
-  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+whoNote()+'<h2>Invite friends</h2><div class="card">'+invList()+'</div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?(players().length<minP()?'<button class="btn alt" disabled>Start game</button><p class="mut" style="text-align:center">Kam se kam '+minP()+' players chahiye. Dost ko invite link bhejo.</p>':'<button class="btn" onclick="startGame()">Start game</button>'):'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
+  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+diffPick()+whoNote()+'<h2>Invite friends</h2><div class="card">'+invList()+'</div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?(players().length<minP()?'<button class="btn alt" disabled>Start game</button><p class="mut" style="text-align:center">Kam se kam '+minP()+' players chahiye. Dost ko invite link bhejo.</p>':'<button class="btn" onclick="startGame()">Start game</button>'):'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
 function scores(){return'<div class="sc">'+players().map(function(p){return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+'</div>'}).join("")+'</div>'}
 function head(){return'<div class="top"><span class="mut">Round '+(G.round+1)+'/'+G.total+'</span>'+(G.deadline&&!G.solved?'<span class="tm" id="tm">…</span>':'<span></span>')+'</div>'+scores()}
-function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="'+(G.game==="chain"?"Type a word":"Type your guess")+'" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
-function sendG(){var i=$("#gi");if(!i||!i.value.trim())return;act({t:G.game==="chain"?"word":"guess",v:i.value});i.value=""}
+function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="'+(G.game==="chain"?"Type a word":"Type your guess")+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="g'+Date.now()+'" oninput="gGuard(this)" onpaste="return G.game!==\'draw\'" ondrop="return G.game!==\'draw\'" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
+function gGuard(i){if(!G||G.game!=="draw"){i._p=i.value;return}var p=i._p||"";if(i.value.length-p.length>2){i.value=p;return}i._p=i.value}
+function sendG(){var i=$("#gi");if(!i||!i.value.trim())return;var v=i.value;i.value="";i._p="";act({t:G.game==="chain"?"word":"guess",v:v})}
 function result(ans){if(!G.solved)return"";return G.solved.id?'<div class="ok">✅ '+esc(nameOf(G.solved.id))+' got it! It was “'+esc(ans)+'”</div>':'<div class="ok" style="color:#ff8a7a">⏰ Time’s up! It was “'+esc(ans)+'”</div>'}
 function vDraw(){var d=G.drawer===myId;
-  return head()+'<div class="card"><div class="mut">'+(d?"You are drawing":esc(nameOf(G.drawer))+" is drawing")+'</div>'+(d?'<div class="mask">'+esc(G.word)+'</div>':'<div class="mask">'+(G.solved?esc(G.word):G.word.replace(/./g,"_ ").trim())+'</div>')+'</div><div id="cvh"></div>'+(d&&!G.solved?tools():"")+result(G.word)+(d?"":guessBox())+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'}
+  return head()+'<div class="card"><div class="mut">'+(d?"You are drawing":esc(nameOf(G.drawer))+" is drawing")+' · '+dtag()+'</div>'+(d?'<div class="mask">'+esc(G.word)+'</div>':'<div class="mask">'+(G.solved?esc(G.word):G.word.replace(/./g,"_ ").trim())+'</div>')+'</div><div id="cvh"></div>'+(d&&!G.solved?tools():"")+result(G.word)+(d?"":guessBox())+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'}
 function vWyr(){var q=G.q,my=G.votes[myId],n=players().length,a=0,b=0,k;for(k in G.votes){G.votes[k]==="A"?a++:b++}var tot=a+b||1;
   function o(v,i,c){var pc=Math.round((v==="A"?a:b)/tot*100),who=players().filter(function(p){return G.votes[p.id]===v}).map(function(p){return p.emoji}).join(" ");
     return'<button class="opt" style="background:'+c+(my===v?";outline:4px solid #fff":"")+'" '+(my||G.reveal?"disabled":"")+' onclick="act({t:\'vote\',v:\''+v+'\'})">'+(G.reveal?'<div class="f" style="width:'+pc+'%"></div>':"")+'<span>'+esc(q[i])+(G.reveal?" · "+pc+"%<br>"+who:"")+'</span></button>'}
@@ -306,7 +343,7 @@ function vWyr(){var q=G.q,my=G.votes[myId],n=players().length,a=0,b=0,k;for(k in
    (G.reveal?(isHost?'<button class="btn" onclick="next()">Next →</button>':'<p class="mut" style="text-align:center">Waiting for the host…</p>')+'<div class="ok">Majority pick = +1 point</div>':'<p class="mut" style="text-align:center">'+Object.keys(G.votes).length+'/'+n+' voted'+(isHost&&Object.keys(G.votes).length?' · <a href="#" onclick="doReveal();return false" style="color:#c9f03c">Reveal now</a>':"")+'</p>')}
 function vEmoji(){return head()+'<div class="card"><div class="mut" style="text-align:center">Movie, place or word?</div><div class="big">'+G.e+'</div></div>'+result(G.a)+guessBox()+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'+(isHost&&!G.solved?'<button class="btn alt" style="margin-top:10px" onclick="next()">Skip</button>':"")}
 function vEnd(){var ps=players().slice().sort(function(a,b){var al=function(p){return G.game==="chain"&&(G.lives[p.id]||0)>0?1:0};return al(b)-al(a)||(G.scores[b.id]||0)-(G.scores[a.id]||0)}),w=ps[0];
-  return'<div class="top">'+logo()+'</div><h1>🏆 '+esc(w.name)+' wins!</h1><div class="card">'+ps.map(function(p,i){return'<div class="pl"><span class="e">'+p.emoji+'</span><b>'+(i+1)+'. '+esc(p.name)+'</b><b style="flex:0">'+(G.scores[p.id]||0)+'</b></div>'}).join("")+'</div>'+(G.game==="who"?whoSummary():"")+'<button class="btn" onclick="share(base(),\''+esc(w.name)+' won '+GAMES[G.game].n+' on PlayPals! Beat me 😎\')">📤 Share result</button><br>'+(isHost?'<button class="btn alt" onclick="G={game:G.game,phase:\'lobby\'};push()">Play again</button><br>':"")+'<button class="btn alt" onclick="leave()">Home</button>'}
+  return'<div class="top">'+logo()+'</div><h1>🏆 '+esc(w.name)+' wins!</h1><div class="card">'+ps.map(function(p,i){return'<div class="pl"><span class="e">'+p.emoji+'</span><b>'+(i+1)+'. '+esc(p.name)+'</b><b style="flex:0">'+(G.scores[p.id]||0)+'</b></div>'}).join("")+'</div>'+(G.game==="who"?whoSummary():"")+'<button class="btn" onclick="share(base(),\''+esc(w.name)+' won '+GAMES[G.game].n+' on PlayPals! Beat me 😎\')">📤 Share result</button><br>'+(isHost?'<button class="btn alt" onclick="G={game:G.game,phase:\'lobby\',diff:G.diff,cat:G.cat};push()">Play again</button><br>':"")+'<button class="btn alt" onclick="leave()">Home</button>'}
 /* ===== Who Wrote It? ===== */
 var QS=["Tumhari sabse badi darr kya hai?","Agar ek din ke liye invisible ho jao to sabse pehle kya karoge?","Tumhara sabse ajeeb shauq kya hai?","Tumhari life ka sabse sharmnak moment?","1 crore mil jaye to sabse pehle kya khareedoge?","Tumhari sabse buri aadat kya hai?","Tumhara koi chhupa hua talent?","Aisi cheez jo tum dobara kabhi nahi khaoge?","Phone me sabse zyada kaunsi app use karti/karte ho?","Tumhari dream job kya hai?","Agar tum koi jaanwar hote to kaunsa?","Raat ko 3 baje neend khul jaye to kya karte ho?","Tumhari sabse badi khoobi kya hai?","Kal duniya khatam ho rahi ho to aakhri kaam kya karoge?","Tumhara sabse darawna sapna?","Bachpan ki sabse yaadgar shararat?","Tumhara guilty pleasure kya hai?","Kisi se milte hi sabse pehle kya notice karte ho?","Tumhara sabse bekaar jhooth jo tumne kabhi bola?","Ek cheez jo tum sab ko batana chahte ho par batate nahi?"];
 var WW={r:-1,ans:{},by:[]},wSent="",wMy={},gPick=null;
@@ -345,7 +382,7 @@ function whoAct(id,d){G.names=G.names||{};G.done=G.done||{};G.gs=G.gs||{};
     if(Object.keys(G.gs).length>=players().filter(function(p){return p.id!==by}).length)whoReveal();else push()}}
 function pObj(id){return players().filter(function(p){return p.id===id})[0]||UC[id]||{emoji:"🙂"}}
 function gname(id){return esc((G.names&&G.names[id])||nameOf(id))}
-function sendW(){var i=$("#gi");if(!i||!i.value.trim())return;var k=G.gid+":"+G.round;wSent=k;wMy[k]=i.value.trim().slice(0,80);act({t:"wans",v:i.value});i.value="";render()}
+function sendW(){var i=$("#gi");if(!i||!i.value.trim())return;var k=G.gid+":"+G.round;var v=i.value;i.value="";wSent=k;wMy[k]=v.trim().slice(0,80);act({t:"wans",v:v});render()}
 function wGuess(id){gPick={k:G.gid+":"+G.round+":"+G.ci,v:id};act({t:"wg",v:id});render()}
 function vWho(){
   var q=QS[G.q]||"",done=G.done||{},dn=Object.keys(done).length,n=players().length,key=G.gid+":"+G.round,o=head();
@@ -382,7 +419,7 @@ function render(){
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
   else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():vEmoji())}
-  if(me&&!room)h=invBanner()+h;
+  if(me)h+=popups();
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
   if(G&&G.phase==="lobby")lastRound=-9;
