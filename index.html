@@ -36,7 +36,7 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 var $=function(s){return document.querySelector(s)};
 var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 var AV=["🐢","🦊","🐸","🐼","🦁","🐙","🐯","🐵"];
-var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"}};
+var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"},who:{n:"Who Wrote It?",e:"🕵️",c:"#ff9ecb",d:"Anonymous answers, guess the writer"}};
 var WORDS="apple banana house car tree sun moon fish cat dog bird flower pizza burger cake phone clock chair bed book ball boat plane train bike hat shoe glasses cup door key umbrella star heart rain snowman guitar camera robot rocket pencil candle bridge".split(" ");
 var WYR=[["Fly like a bird","Swim like a fish"],["Always be late","Always be early"],["Eat pizza forever","Eat burgers forever"],["Have no phone for a week","Have no friends for a week"],["Be invisible","Read minds"],["Live in the mountains","Live by the sea"],["Never sleep","Never eat sweets"],["Talk to animals","Speak every language"],["Be super strong","Be super fast"],["Have a pet dragon","Have a pet robot"],["Watch only comedy","Watch only action"],["Travel to the past","Travel to the future"],["Sing everything you say","Dance everywhere you go"],["Have unlimited ice cream","Have unlimited pizza"],["Be famous","Be rich"],["Always be hot","Always be cold"]];
 var EMJ=[["🦁👑","lion king"],["🕷️👨","spiderman"],["❄️👸","frozen"],["🚢🧊","titanic"],["🐠🔍","finding nemo"],["🍕🐢","ninja turtles"],["🧙⚡","harry potter"],["🌧️☔","rain"],["📱🔋","phone"],["🍎📱","apple"],["☀️🏖️","beach"],["⚽🏆","football"],["🎂🎈","birthday"],["🚗💨","fast car"],["🐝🍯","honey"],["🌙⭐","night"],["🏏🇮🇳","cricket"],["🦇🧔","batman"],["🍫🏭","chocolate factory"],["👻🏠","haunted house"]];
@@ -56,7 +56,7 @@ var me=null,friends={},tab="play",room=null,code="",G=null,isHost=false,myId="me
 // ===== APNA NAYA FIREBASE CONFIG YAHAN PASTE KARO =====
 var CFG=LS.get("ppcfg",null)||{apiKey:"AIzaSyDTG4mXEhcomMD4qoZO-eFpAk4PLKrYRow",authDomain:"play-41284.firebaseapp.com",databaseURL:"https://play-41284-default-rtdb.firebaseio.com",projectId:"play-41284",storageBucket:"play-41284.firebasestorage.app",messagingSenderId:"902967356478",appId:"1:902967356478:web:816b53bdd6e404aad7356f"};
 // ========================================================
-var db=null,auth=null,uid=null,blocks={},UC=LS.get("ppuc",{}),authErr="";
+var SID=Math.random().toString(36).slice(2),db=null,auth=null,uid=null,blocks={},UC=LS.get("ppuc",{}),authErr="";
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function norm(s){return String(s).toLowerCase().replace(/[^a-z0-9]/g,"")}
 function shuf(n){var a=[],i,j,t;for(i=0;i<n;i++)a.push(i);for(i=n-1;i>0;i--){j=Math.floor(Math.random()*(i+1));t=a[i];a[i]=a[j];a[j]=t}return a}
@@ -75,11 +75,13 @@ function fb(c){
       if(t==="state")return R.child("state").set(JSON.parse(JSON.stringify(d)));
       if(t==="act")return R.child("acts").push({by:uid,d:d});
       if(t==="draw")return R.child("draw").push({by:uid,d:d})},
-    presence:function(p){var r=R.child("players/"+uid);on(db.ref(".info/connected"),"value",function(s){if(s.val()){r.set(p);r.onDisconnect().remove()}})},
+    presence:function(p){p.sid=SID;var r=R.child("players/"+uid);on(db.ref(".info/connected"),"value",function(s){if(s.val()){r.set(p);r.onDisconnect().remove()}})},
     onPeers:function(fn){on(R.child("players"),"value",function(s){var v=s.val()||{},ps=[],j=[];Object.keys(v).forEach(function(k){var p={peer:k,isMe:k===uid,presence:v[k]};ps.push(p);if(!prev[k])j.push(p)});prev=v;fn({peers:ps,joined:j})})},
+    drop:function(){L.forEach(function(x){x[0].off(x[1],x[2])});try{R.child("players/"+uid).onDisconnect().cancel()}catch(e){}},
     leave:function(){L.forEach(function(x){x[0].off(x[1],x[2])});R.child("players/"+uid).remove();if(isHost)R.remove()}}}
 function nG(g){g.log=g.log||[];g.votes=g.votes||{};g.scores=g.scores||{};g.skips=g.skips||{};g.used=g.used||[];g.lives=g.lives||{};return g}
 function connect(c,host){
+  if(room&&code===c)return;
   if(host)return doConnect(c,true,false);
   db.ref("pp/rooms/"+c+"/host").once("value").then(function(s){var h=s.val();
     if(h===uid)return doConnect(c,true,true);
@@ -91,24 +93,32 @@ function doConnect(c,host,re){
   room.on("state",function(m){if(isHost)return;G=nG(m.data);render()});
   room.on("act",function(m){handleAct(m.peer,m.data)});
   room.on("draw",function(m){if(!m.isMe&&!blocks[m.peer])drawSegs(m.data)});
-  room.onPeers(function(ch){peers=ch.peers.map(function(p){var q=p.presence||{};return{id:p.peer,name:q.name||"Guest",emoji:q.emoji||"🙂",dp:q.dp||"",host:!!q.host,me:p.isMe}});if(isHost&&G&&ch.joined.length)room.emit("state",G);render()});
+  room.onPeers(function(ch){var mn=ch.peers.filter(function(p){return p.isMe})[0];
+    if(mn&&mn.presence&&mn.presence.sid&&mn.presence.sid!==SID){var r0=room;room=null;try{r0.drop()}catch(e){}clearInv();code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render();return}
+    peers=ch.peers.map(function(p){var q=p.presence||{};return{id:p.peer,name:q.name||"Guest",emoji:q.emoji||"🙂",dp:q.dp||"",host:!!q.host,me:p.isMe}});if(isHost&&G&&ch.joined.length)room.emit("state",G);render()});
   room.presence({name:me.name,emoji:me.emoji,dp:me.dp||"",host:host});
   if(host&&pendGame){db.ref("pp/rooms/"+c+"/host").set(uid);G={game:pendGame,phase:"lobby"};pendGame=null;room.emit("state",G)}else if(host&&re){db.ref("pp/rooms/"+c+"/state").once("value").then(function(s){var v=s.val();if(v){G=nG(v);render()}})}
   render()}
 function newRoom(game){pendGame=game;var c="";for(var i=0;i<4;i++)c+="ABCDEFGHJKLMNPQRSTUVWXYZ".charAt(Math.floor(Math.random()*24));connect(c,true)}
-function leave(){try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
+function leave(){clearInv();try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
 function av(p,s){s=s||34;var d=p.dp&&String(p.dp).indexOf("data:image/")===0;return d?'<img src="'+esc(p.dp)+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover">':'<span style="font-size:'+Math.round(s*.8)+'px">'+esc(p.emoji||"🙂")+'</span>'}
-var sentInv={},invs={},invAt={};
+var sentInv={},invs={},invAt={},missed={},invW={},INV_MS=15000;
+function cd(at){return Math.max(0,Math.ceil((INV_MS-(Date.now()-at))/1000))}
+function tickCd(){var a=document.querySelectorAll(".invcd"),i;for(i=0;i<a.length;i++)a[i].textContent=cd(+a[i].getAttribute("data-at"))}
+function clearInv(){Object.keys(sentInv).forEach(function(k){try{if(invW[k])invW[k].ref.off("value",invW[k].f);db.ref("pp/invites/"+k+"/"+sentInv[k].c).remove()}catch(e){}});sentInv={};invW={};missed={}}
 function invList(){var ids=Object.keys(friends).filter(function(i){return!blocks[i]});
   if(!ids.length)return'<p class="mut">Abhi koi friend nahi. Friends tab me ID se add karo.</p>';
   return ids.map(function(i){var u=UC[i];if(!u){getU(i,function(){render()});u={name:"…"}}
     var inR=players().some(function(p){return p.id===i});
-    return'<div class="pl"><span class="e">'+av(u)+'</span><b>'+esc(u.name)+'</b>'+(inR?'<span class="mut">In room</span>':sentInv[i]?'<span class="mut">Sent ✓</span>':'<button class="btn sm" style="flex:0" onclick="invite(\''+i+'\')">Invite</button>')+'</div>'}).join("")}
-function invite(i){sentInv[i]=Date.now();db.ref("pp/invites/"+i+"/"+code).set({from:me.name,game:G?G.game:"",t:Date.now()});render()}
+    return'<div class="pl"><span class="e">'+av(u)+'</span><b>'+esc(u.name)+'</b>'+(inR?'<span class="mut">In room</span>':sentInv[i]?'<span class="mut">Sent ✓ <b class="invcd" data-at="'+sentInv[i].t+'">'+cd(sentInv[i].t)+'</b>s</span>':'<button class="btn sm" style="flex:0" onclick="invite(\''+i+'\')">'+(missed[i]?'Invite again':'Invite')+'</button>')+'</div>'}).join("")}
+function invite(i){if(sentInv[i]||!code)return;var t=Date.now(),c=code,ref=db.ref("pp/invites/"+i+"/"+c),seen=false;
+  sentInv[i]={t:t,c:c};delete missed[i];ref.set({from:me.name,game:G?G.game:"",t:t});
+  var f=function(s){if(s.val()){seen=true;return}if(!seen)return;ref.off("value",f);delete invW[i];if(sentInv[i]&&sentInv[i].t===t){delete sentInv[i];render()}};
+  ref.on("value",f);invW[i]={ref:ref,f:f};render()}
 function dropInv(c){db.ref("pp/invites/"+uid+"/"+c).remove()}
 function joinInv(c){dropInv(c);connect(c,false)}
-function invBanner(){var o="";Object.keys(invs).forEach(function(c){var v=invs[c];if(!v||!invAt[c]||Date.now()-invAt[c].at>30000)return;var g=GAMES[v.game]||{e:"🎮",n:"game"};
-  o+='<div class="card" style="margin:6px 0;border:2px solid var(--lime)"><b>'+esc(v.from)+'</b> ne '+g.e+' '+g.n+' me invite kiya<div class="row" style="margin-top:8px"><button class="btn sm" onclick="joinInv(\''+c+'\')">Join</button><button class="btn sm alt" onclick="dropInv(\''+c+'\')">Reject</button></div></div>'});
+function invBanner(){var o="";Object.keys(invs).forEach(function(c){var v=invs[c];if(!v||!invAt[c]||Date.now()-invAt[c].at>INV_MS)return;var g=GAMES[v.game]||{e:"🎮",n:"game"};
+  o+='<div class="card" style="margin:6px 0;border:2px solid var(--lime)"><b>'+esc(v.from)+'</b> ne '+g.e+' '+g.n+' me invite kiya <span class="mut">(<b class="invcd" data-at="'+invAt[c].at+'">'+cd(invAt[c].at)+'</b>s)</span><div class="row" style="margin-top:8px"><button class="btn sm" onclick="joinInv(\''+c+'\')">Join</button><button class="btn sm alt" onclick="dropInv(\''+c+'\')">Reject</button></div></div>'});
   return o?'<div style="position:fixed;top:env(safe-area-inset-top,0px);left:8px;right:8px;z-index:60">'+o+'</div>':""}
 function loadSocial(){
   db.ref("pp/invites/"+uid).on("value",function(s){invs=s.val()||{};Object.keys(invs).forEach(function(c){var v=invs[c];if(!v)return;if(Date.now()-v.t>600000){delete invs[c];dropInv(c);return}if(!invAt[c]||invAt[c].t!==v.t)invAt[c]={t:v.t,at:Date.now()}});render()});
@@ -181,7 +191,7 @@ function saveProf(){me.name=($("#pn").value.trim()||me.name).slice(0,14);me.bio=
 function pickE(a){me.emoji=a;saveMe()}
 function setDp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=c.height=80;var x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,80,80);me.dp=c.toDataURL("image/jpeg",.7);saveMe()};im.src=r.result};r.readAsDataURL(f)}
 function push(){if(room)room.emit("state",G);render()}
-function startGame(){if(players().length<2)return;if(G.game==="chain")return startChain();
+function startGame(){if(players().length<minP())return;if(G.game==="who")return startWho();if(G.game==="chain")return startChain();
   var ps=players(),g=G.game,tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
   var sc={};ps.forEach(function(p){sc[p.id]=0});
   G={game:g,phase:"play",round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?WORDS.length:g==="wyr"?WYR.length:EMJ.length)};next()}
@@ -196,6 +206,7 @@ function next(){
   push()}
 function handleAct(id,d){if(G&&G.game==="chain"&&G.phase==="play"&&!blocks[id])return chainAct(id,d);
   if(!G||G.phase!=="play"||blocks[id])return;
+  if(G.game==="who")return whoAct(id,d);
   if(d.t==="guess"&&!G.solved){
     var ans=G.game==="draw"?G.word:G.a;
     if(id===G.drawer)return;
@@ -214,6 +225,7 @@ setInterval(function(){
   if(!G||G.phase!=="play"||!G.deadline)return;
   var t=$("#tm");if(t&&!G.solved)t.textContent=Math.max(0,Math.ceil((G.deadline-Date.now())/1000))+"s";
   if(isHost&&G.game==="chain"){if(Date.now()>G.deadline)chainTimeout();return}
+  if(isHost&&G.game==="who"){whoTick();return}
   if(isHost&&!G.solved&&Date.now()>G.deadline){G.solved={timeout:1};push();setTimeout(next,2500)}},1000);
 /* drawing */
 var pen="#111111",PC=["#111111","#e53935","#fb8c00","#fdd835","#43a047","#1e88e5","#8e24aa","#795548"];
@@ -230,11 +242,11 @@ function flush(){if(pend.length&&room)room.emit("draw",pend);pend=[]}
 function drawSegs(a){if(a==="clear"){cx&&cx.clearRect(0,0,600,600);return}if(Array.isArray(a))a.forEach(seg)}
 function clearCv(){cx.clearRect(0,0,600,600);if(room)room.emit("draw","clear")}
 /* word chain */
-function catPick(){if(!G||G.game!=="chain")return"";var c=G.cat||"fruits";
+function catPick(){if(!G||G.game!=="chain")return"";var c=G.cat||"all";
   return'<h2>Category</h2><div class="card">'+(isHost?'<div class="ch">'+Object.keys(CATS).map(function(k){return'<button class="'+(k===c?"on":"")+'" onclick="setCat(\''+k+'\')">'+CATS[k].e+" "+CATS[k].n+'</button>'}).join("")+'</div>':'<b>'+CATS[c].e+" "+CATS[c].n+'</b>')+'<p class="mut">'+(c==='all'?'All me koi bhi word chalega, bas pichhle word ke last letter se shuru ho aur repeat na ho.':'Sirf isi category ke words, pichhle word ke last letter se, repeat nahi.')+' 30s per turn. 3 galat jawab ya time out = out. Koi out ho to naya round aur nayi category.</p></div>'}
 function setCat(k){G.cat=k;push()}
 function startChain(){var ps=players(),sc={},lv={};ps.forEach(function(p){sc[p.id]=0;lv[p.id]=3});
-  G={game:"chain",phase:"play",cat:G.cat||"fruits",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,rnd:1,deadline:Date.now()+30000,log:[]};push()}
+  G={game:"chain",phase:"play",cat:G.cat||"all",scores:sc,lives:lv,used:[],need:"",multi:ps.length>1,turn:ps[0].id,rnd:1,deadline:Date.now()+30000,log:[]};push()}
 function nextTurn(){var ps=players(),i=0,k,p;for(k=0;k<ps.length;k++)if(ps[k].id===G.turn)i=k;
   for(k=1;k<=ps.length;k++){p=ps[(i+k)%ps.length];if((G.lives[p.id]||0)>0){G.turn=p.id;break}}
   G.deadline=Date.now()+30000}
@@ -279,7 +291,7 @@ function vMe(){return shell('<div class="top">'+logo()+'<button class="btn sm al
 function share(u,t){if(navigator.share){navigator.share({title:"PlayPals",text:t,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link copied")},function(){prompt("Copy this link",u)})}else prompt("Copy this link",u)}
 function plist(){return players().map(function(p){return'<div class="pl" onclick="showP(\''+p.id+'\')"><span class="e">'+av(p)+'</span><b>'+esc(p.name)+(p.me?" (you)":"")+(p.host?" 👑":"")+(blocks[p.id]?" 🚫":"")+'</b><span class="mut">'+(p.me?"":friends[p.id]?"friend":"view ›")+'</span></div>'}).join("")}
 function vLobby(){var g=G?GAMES[G.game]:null,link=base()+"#"+code;
-  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+'<h2>Invite friends</h2><div class="card">'+invList()+'</div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?(players().length<2?'<button class="btn alt" disabled>Start game</button><p class="mut" style="text-align:center">Kam se kam 2 players chahiye. Dost ko invite link bhejo.</p>':'<button class="btn" onclick="startGame()">Start game</button>'):'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
+  return shell('<div class="top">'+logo()+'<button class="btn sm alt" onclick="leave()">Leave</button></div><h1>'+(g?g.e+" "+g.n:"Joining…")+'</h1><div class="card"><div class="mut" style="text-align:center">Room code</div><div class="code">'+esc(code)+'</div><button class="btn" onclick="share(\''+link+'\',\'Join my game on PlayPals! Code: '+code+'\')">🔗 Send invite link</button><p class="mut" style="text-align:center">Friends open the link, type a name, and they’re in.</p></div>'+catPick()+whoNote()+'<h2>Invite friends</h2><div class="card">'+invList()+'</div><h2>Players ('+players().length+')</h2><div class="card">'+plist()+'</div>'+(isHost?(players().length<minP()?'<button class="btn alt" disabled>Start game</button><p class="mut" style="text-align:center">Kam se kam '+minP()+' players chahiye. Dost ko invite link bhejo.</p>':'<button class="btn" onclick="startGame()">Start game</button>'):'<p class="mut" style="text-align:center">Waiting for the host to start…</p>'))}
 function scores(){return'<div class="sc">'+players().map(function(p){return'<div onclick="showP(\''+p.id+'\')">'+av(p,20)+' '+esc(p.name)+' · '+((G.scores&&G.scores[p.id])||0)+'</div>'}).join("")+'</div>'}
 function head(){return'<div class="top"><span class="mut">Round '+(G.round+1)+'/'+G.total+'</span>'+(G.deadline&&!G.solved?'<span class="tm" id="tm">…</span>':'<span></span>')+'</div>'+scores()}
 function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placeholder="'+(G.game==="chain"?"Type a word":"Type your guess")+'" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendG()"><button class="btn sm" style="flex:0" onclick="sendG()">Go</button></div>'}
@@ -294,20 +306,92 @@ function vWyr(){var q=G.q,my=G.votes[myId],n=players().length,a=0,b=0,k;for(k in
    (G.reveal?(isHost?'<button class="btn" onclick="next()">Next →</button>':'<p class="mut" style="text-align:center">Waiting for the host…</p>')+'<div class="ok">Majority pick = +1 point</div>':'<p class="mut" style="text-align:center">'+Object.keys(G.votes).length+'/'+n+' voted'+(isHost&&Object.keys(G.votes).length?' · <a href="#" onclick="doReveal();return false" style="color:#c9f03c">Reveal now</a>':"")+'</p>')}
 function vEmoji(){return head()+'<div class="card"><div class="mut" style="text-align:center">Movie, place or word?</div><div class="big">'+G.e+'</div></div>'+result(G.a)+guessBox()+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'+(isHost&&!G.solved?'<button class="btn alt" style="margin-top:10px" onclick="next()">Skip</button>':"")}
 function vEnd(){var ps=players().slice().sort(function(a,b){var al=function(p){return G.game==="chain"&&(G.lives[p.id]||0)>0?1:0};return al(b)-al(a)||(G.scores[b.id]||0)-(G.scores[a.id]||0)}),w=ps[0];
-  return'<div class="top">'+logo()+'</div><h1>🏆 '+esc(w.name)+' wins!</h1><div class="card">'+ps.map(function(p,i){return'<div class="pl"><span class="e">'+p.emoji+'</span><b>'+(i+1)+'. '+esc(p.name)+'</b><b style="flex:0">'+(G.scores[p.id]||0)+'</b></div>'}).join("")+'</div><button class="btn" onclick="share(base(),\''+esc(w.name)+' won '+GAMES[G.game].n+' on PlayPals! Beat me 😎\')">📤 Share result</button><br>'+(isHost?'<button class="btn alt" onclick="G={game:G.game,phase:\'lobby\'};push()">Play again</button><br>':"")+'<button class="btn alt" onclick="leave()">Home</button>'}
+  return'<div class="top">'+logo()+'</div><h1>🏆 '+esc(w.name)+' wins!</h1><div class="card">'+ps.map(function(p,i){return'<div class="pl"><span class="e">'+p.emoji+'</span><b>'+(i+1)+'. '+esc(p.name)+'</b><b style="flex:0">'+(G.scores[p.id]||0)+'</b></div>'}).join("")+'</div>'+(G.game==="who"?whoSummary():"")+'<button class="btn" onclick="share(base(),\''+esc(w.name)+' won '+GAMES[G.game].n+' on PlayPals! Beat me 😎\')">📤 Share result</button><br>'+(isHost?'<button class="btn alt" onclick="G={game:G.game,phase:\'lobby\'};push()">Play again</button><br>':"")+'<button class="btn alt" onclick="leave()">Home</button>'}
+/* ===== Who Wrote It? ===== */
+var QS=["Tumhari sabse badi darr kya hai?","Agar ek din ke liye invisible ho jao to sabse pehle kya karoge?","Tumhara sabse ajeeb shauq kya hai?","Tumhari life ka sabse sharmnak moment?","1 crore mil jaye to sabse pehle kya khareedoge?","Tumhari sabse buri aadat kya hai?","Tumhara koi chhupa hua talent?","Aisi cheez jo tum dobara kabhi nahi khaoge?","Phone me sabse zyada kaunsi app use karti/karte ho?","Tumhari dream job kya hai?","Agar tum koi jaanwar hote to kaunsa?","Raat ko 3 baje neend khul jaye to kya karte ho?","Tumhari sabse badi khoobi kya hai?","Kal duniya khatam ho rahi ho to aakhri kaam kya karoge?","Tumhara sabse darawna sapna?","Bachpan ki sabse yaadgar shararat?","Tumhara guilty pleasure kya hai?","Kisi se milte hi sabse pehle kya notice karte ho?","Tumhara sabse bekaar jhooth jo tumne kabhi bola?","Ek cheez jo tum sab ko batana chahte ho par batate nahi?"];
+var WW={r:-1,ans:{},by:[]},wSent="",wMy={},gPick=null;
+function minP(){return G&&G.game==="who"?3:2}
+function whoNote(){if(!G||G.game!=="who")return"";return'<h2>Kaise khelte hain</h2><div class="card"><p class="mut">1) Sawal aata hai, sab anonymous jawab likhte hain.<br>2) Jawab ek ek karke dikhte hain, sab guess karte hain kis ne likha.<br>3) Sahi guess = +10. Tumhara jawab jitne log galat guess karein, har galat par +5.<br>4) Aakhir me poori list dikhti hai ki kis ne kis ko guess kiya. 4 rounds, kam se kam 3 players.</p></div>'}
+function startWho(){var sc={},nm={};players().forEach(function(p){sc[p.id]=0;nm[p.id]=p.name});
+  G={game:"who",phase:"play",gid:Date.now(),round:-1,total:Math.min(4,QS.length),scores:sc,names:nm,order:shuf(QS.length),log:[],hist:[]};whoNextRound()}
+function whoNextRound(){
+  G.round++;if(G.round>=G.total){G.phase="end";push();return}
+  WW={r:G.round,ans:{},by:[]};G.names=G.names||{};players().forEach(function(p){G.names[p.id]=p.name});
+  G.q=G.order[G.round];G.stage="write";G.done={};G.cards=[];G.ci=0;G.rev=false;G.by=null;G.gs={};G.deadline=Date.now()+45000;push()}
+function whoToGuess(){if(!G||G.stage!=="write")return;
+  var ids=WW.r===G.round?Object.keys(WW.ans):[];
+  if(ids.length<2){return whoNextRound()}
+  var p=shuf(ids.length).map(function(i){return ids[i]});
+  WW.by=p;G.cards=p.map(function(i){return WW.ans[i]});G.stage="guess";G.ci=0;G.rev=false;G.by=null;G.gs={};G.deadline=Date.now()+20000;push()}
+function whoReveal(){if(!G||G.stage!=="guess"||G.rev)return;
+  var by=WW.r===G.round&&WW.by&&WW.by[G.ci];if(!by)return whoNextRound();
+  var gs=G.gs||{},bad=0,k,h={};
+  for(k in gs){h[k]=gs[k];if(gs[k]===by)G.scores[k]=(G.scores[k]||0)+10;else bad++}
+  G.scores[by]=(G.scores[by]||0)+5*bad;
+  G.hist=(G.hist||[]).concat([{q:G.q,a:G.cards[G.ci],by:by,g:h}]);
+  G.by=by;G.rev=true;G.deadline=Date.now()+6000;push()}
+function whoNextCard(){if(!isHost||!G||G.game!=="who"||G.stage!=="guess"||!G.rev)return;
+  G.ci++;if(G.ci>=(G.cards||[]).length)return whoNextRound();
+  G.rev=false;G.by=null;G.gs={};G.deadline=Date.now()+20000;push()}
+function whoTick(){if(Date.now()<=G.deadline)return;
+  if(G.stage==="write")whoToGuess();else if(G.stage==="guess"){if(G.rev)whoNextCard();else whoReveal()}}
+function whoAct(id,d){G.names=G.names||{};G.done=G.done||{};G.gs=G.gs||{};
+  if(d.t==="wans"&&G.stage==="write"){var v=String(d.v||"").trim().slice(0,80);
+    if(WW.r!==G.round)WW={r:G.round,ans:{},by:[]};
+    if(!v||WW.ans[id])return;WW.ans[id]=v;G.names[id]=nameOf(id);G.done[id]=1;
+    if(Object.keys(G.done).length>=players().length)whoToGuess();else push();return}
+  if(d.t==="wg"&&G.stage==="guess"&&!G.rev){var by=WW.r===G.round&&WW.by&&WW.by[G.ci];
+    if(!by||id===by||d.v===id||!G.done[d.v])return;G.gs[id]=d.v;
+    if(Object.keys(G.gs).length>=players().filter(function(p){return p.id!==by}).length)whoReveal();else push()}}
+function pObj(id){return players().filter(function(p){return p.id===id})[0]||UC[id]||{emoji:"🙂"}}
+function gname(id){return esc((G.names&&G.names[id])||nameOf(id))}
+function sendW(){var i=$("#gi");if(!i||!i.value.trim())return;var k=G.gid+":"+G.round;wSent=k;wMy[k]=i.value.trim().slice(0,80);act({t:"wans",v:i.value});i.value="";render()}
+function wGuess(id){gPick={k:G.gid+":"+G.round+":"+G.ci,v:id};act({t:"wg",v:id});render()}
+function vWho(){
+  var q=QS[G.q]||"",done=G.done||{},dn=Object.keys(done).length,n=players().length,key=G.gid+":"+G.round,o=head();
+  o+='<div class="card" style="text-align:center"><div class="mut">'+(G.stage==="write"?"Sawal":"Sawal · jawab "+(G.ci+1)+"/"+(G.cards||[]).length)+'</div><div class="big" style="font-size:24px;line-height:1.3">'+esc(q)+'</div></div>';
+  if(G.stage==="write"){
+    var sent=done[myId]||wSent===key;
+    return o+(sent?'<div class="ok">✅ Jawab bhej diya. Baaki ka wait… ('+dn+'/'+n+')</div>':'<div class="row"><input id="gi" maxlength="80" placeholder="Apna jawab likho (anonymous)" autocomplete="off" onkeydown="if(event.key===\'Enter\')sendW()"><button class="btn sm" style="flex:0" onclick="sendW()">Send</button></div><p class="mut" style="text-align:center">Kisi ko pata nahi chalega ki kis ne likha 🤫 ('+dn+'/'+n+' likh chuke)</p>')}
+  var ans=(G.cards||[])[G.ci]||"";
+  o+='<div class="card" style="text-align:center;border:2px solid var(--lime)"><div class="big" style="font-size:22px;line-height:1.3">“'+esc(ans)+'”</div></div>';
+  if(G.rev){
+    var gs=G.gs||{},rows=Object.keys(gs).map(function(k){var ok=gs[k]===G.by;return'<div class="pl"><span class="e">'+av(pObj(k),24)+'</span><b>'+gname(k)+' → '+gname(gs[k])+'</b><span>'+(ok?"✅ +10":"❌")+'</span></div>'}).join("");
+    return o+'<div class="ok">✍️ Ye jawab <b>'+gname(G.by)+'</b> ka tha!</div><div class="card">'+(rows||'<span class="mut">Kisi ne guess nahi kiya</span>')+'</div>'+(isHost?'<button class="btn" onclick="whoNextCard()">Next →</button>':'<p class="mut" style="text-align:center">Agla jawab aa raha hai…</p>')}
+  if(wMy[key]===ans)o+='<div class="ok">🤫 Ye tumhara jawab hai! Dekho kaun pakadta hai…</div>';
+  else{var opts=Object.keys(done).filter(function(i){return i!==myId}),pk=(gPick&&gPick.k===key+":"+G.ci)?gPick.v:(G.gs&&G.gs[myId]);
+    o+='<h2>Kis ne likha?</h2><div class="card">'+opts.map(function(i){return'<div class="pl" style="'+(pk===i?"outline:3px solid var(--lime);border-radius:14px":"")+'" onclick="wGuess(\''+i+'\')"><span class="e">'+av(pObj(i))+'</span><b>'+gname(i)+'</b></div>'}).join("")+'</div>'}
+  return o+'<p class="mut" style="text-align:center">'+Object.keys(G.gs||{}).length+' guess aa chuke</p>'}
+function whoSummary(){var H=G.hist||[];if(!H.length)return"";
+  var cor={},fool={},caught={};
+  H.forEach(function(e){var g=e.g||{},k;for(k in g){if(g[k]===e.by){cor[k]=(cor[k]||0)+1;caught[e.by]=(caught[e.by]||0)+1}else fool[e.by]=(fool[e.by]||0)+1}});
+  function top(o){var b=null,k;for(k in o)if(!b||o[k]>o[b])b=k;return b}
+  var d=top(cor),a=top(fool),z=top(caught),aw="";
+  if(d)aw+='<div class="pl"><b>🕵️ Best Detective</b><span class="mut">'+gname(d)+' · '+cor[d]+' sahi</span></div>';
+  if(a)aw+='<div class="pl"><b>🎭 Best Actor</b><span class="mut">'+gname(a)+' · '+fool[a]+' ko chakma diya</span></div>';
+  if(z)aw+='<div class="pl"><b>😂 Sabse Aasan</b><span class="mut">'+gname(z)+' · '+caught[z]+' ne pakda</span></div>';
+  var lq=-1,det="";
+  H.forEach(function(e){var g=e.g||{};
+    if(e.q!==lq){det+='<p class="mut" style="margin:12px 0 4px"><b>'+esc(QS[e.q]||"")+'</b></p>';lq=e.q}
+    det+='<div style="margin:6px 0"><b>“'+esc(e.a)+'”</b> — ✍️ '+gname(e.by)+'<br>'+(Object.keys(g).map(function(k){return'<span class="mut">'+gname(k)+' → '+gname(g[k])+' '+(g[k]===e.by?"✅":"❌")+'</span>'}).join("<br>")||'<span class="mut">Kisi ne guess nahi kiya</span>')+'</div>'});
+  return(aw?'<h2>Awards</h2><div class="card">'+aw+'</div>':"")+'<details class="card"><summary style="cursor:pointer;font-weight:700">🔍 Kis ne kis ko guess kiya (poori list)</summary>'+det+'</details>'}
 function render(){
   var app=$("#app"),gi=$("#gi"),v=gi?gi.value:"",f=gi&&document.activeElement===gi,h;
   if(!me)h=vLogin();
   else if(!room)h=tab==="fr"?vFriends():tab==="me"?vMe():vHome();
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
-  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():vEmoji())}
+  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():vEmoji())}
   if(me&&!room)h=invBanner()+h;
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
   if(G&&G.phase==="lobby")lastRound=-9;
   var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}sync()}
 if("serviceWorker"in navigator&&location.protocol.indexOf("http")===0)window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
-setInterval(function(){var ch=0,n=Date.now(),k;for(k in sentInv)if(n-sentInv[k]>30000){delete sentInv[k];ch=1}for(k in invs)if(invAt[k]&&n-invAt[k].at>30000&&invs[k]){delete invs[k];dropInv(k);ch=1}if(ch)render()},2000);
+setInterval(function(){var ch=0,n=Date.now(),k;
+  for(k in sentInv)if(n-sentInv[k].t>INV_MS){var s0=sentInv[k];try{if(invW[k]){invW[k].ref.off("value",invW[k].f);delete invW[k]}db.ref("pp/invites/"+k+"/"+s0.c).remove()}catch(e){}delete sentInv[k];missed[k]=1;ch=1}
+  for(k in invs)if(invAt[k]&&n-invAt[k].at>INV_MS&&invs[k]){delete invs[k];dropInv(k);ch=1}
+  if(ch)render();else tickCd()},1000);
+window.addEventListener("hashchange",function(){var h=location.hash.replace("#","").toUpperCase();if(!me||h.length!==4||h===code)return;if(room&&isHost&&!confirm("Apna room band karke naye room me jana hai?"))return;connect(h,false)});
 authInit();if(db)render();
 </script></body></html>
