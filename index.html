@@ -476,7 +476,7 @@ function bJudge(){
     var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ctl)ctl.abort()},45000);
     fetch(AI_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({word:G.word,items:items}),signal:ctl?ctl.signal:undefined})
       .then(function(r){return r.json()})
-      .then(function(j){clearTimeout(tm);AIERR=(j&&j.error)?String(j.error):"";bFinish(rid,ids,j)})
+      .then(function(j){clearTimeout(tm);AIERR=(j&&j.error)?String(j.error):((j&&j.scores&&j.scores.length===ids.length)?"":"format "+((j&&j.scores)?j.scores.length:"none")+"/"+ids.length);bFinish(rid,ids,j)})
       .catch(function(e){clearTimeout(tm);AIERR="net: "+(e&&e.message?e.message:"fail");bFinish(rid,ids,null)})
   }).catch(function(){bFinish(rid,[],null)})}
 function bFinish(rid,ids,j){
@@ -484,7 +484,7 @@ function bFinish(rid,ids,j){
   var n=ids.length,sc={},ai=false,i,cm="",ro="",win=null,bad=null;
   if(j&&n&&j.scores&&j.scores.length===n){ai=true;for(i=0;i<n;i++){var x=Number(j.scores[i]);if(!isFinite(x)){ai=false;break}sc[ids[i]]=Math.max(0,Math.min(10,Math.round(x)))}}
   if(ai){cm=String(j.comment||"").slice(0,220);ro=String(j.roast||"").slice(0,300)}
-  else{sc={};ids.forEach(function(k){sc[k]=2+Math.floor(Math.random()*7)});cm=n?"AI abhi busy hai"+(AIERR?" ["+AIERR+"]":"")+", is liye random judge ne faisla kiya 😅":"";ro=BROAST[Math.floor(Math.random()*BROAST.length)]}
+  else{sc={};ids.forEach(function(k){sc[k]=2+Math.floor(Math.random()*7)});cm=n?"AI abhi busy hai v2"+(AIERR?" ["+AIERR+"]":"")+", is liye random judge ne faisla kiya 😅":"";ro=BROAST[Math.floor(Math.random()*BROAST.length)]}
   function pick(cmp){var b=null;ids.forEach(function(k){if(b===null||cmp(sc[k],sc[b]))b=k});return b}
   win=pick(function(a,b){return a>b});bad=pick(function(a,b){return a<b});
   if(ai){var wi=ids[j.winner],bi=ids[j.worst];if(wi&&sc[wi]===sc[win])win=wi;if(bi&&sc[bi]===sc[bad]&&bi!==win)bad=bi}
