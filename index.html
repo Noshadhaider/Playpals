@@ -40,7 +40,7 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 var $=function(s){return document.querySelector(s)};
 var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 var AV=["🐢","🦊","🐸","🐼","🦁","🐙","🐯","🐵"];
-var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"},who:{n:"Who Wrote It?",e:"🕵️",c:"#ff9ecb",d:"Anonymous answers, guess the writer"}};
+var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"},who:{n:"Who Wrote It?",e:"🕵️",c:"#ff9ecb",d:"Anonymous answers, guess the writer"},battle:{n:"Draw Battle",e:"🖌️",c:"#ff9e4a",d:"Same word, 1 min, AI judges & roasts"}};
 var WORDS="apple banana house car tree sun moon fish cat dog bird flower pizza burger cake phone clock chair bed book ball boat plane train bike hat shoe glasses cup door key umbrella star heart rain snowman guitar camera robot rocket pencil candle bridge".split(" ");
 var DIFF={easy:{n:"Easy",e:"🟢",t:90,p:10,d:"Aasan cheezein (apple, cat, sun). 90 sec, sahi guess +10 points."},medium:{n:"Medium",e:"🟡",t:75,p:15,d:"Thode mushkil (windmill, volcano, pirate). 75 sec, sahi guess +15 points."},hard:{n:"Hard",e:"🔴",t:60,p:20,d:"Bohot mushkil (gravity, orchestra, echo). 60 sec, sahi guess +20 points."}};
 var WORDS_D={easy:WORDS,
@@ -224,7 +224,7 @@ function saveProf(){me.name=($("#pn").value.trim()||me.name).slice(0,14);me.bio=
 function pickE(a){me.emoji=a;saveMe()}
 function setDp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=c.height=80;var x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,80,80);me.dp=c.toDataURL("image/jpeg",.7);saveMe()};im.src=r.result};r.readAsDataURL(f)}
 function push(){if(room)room.emit("state",G);render()}
-function startGame(){if(players().length<minP())return;if(G.game==="who")return startWho();if(G.game==="chain")return startChain();
+function startGame(){if(players().length<minP())return;if(G.game==="who")return startWho();if(G.game==="chain")return startChain();if(G.game==="battle")return startBattle();
   var ps=players(),g=G.game,df=G.diff||"easy",tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
   var sc={};ps.forEach(function(p){sc[p.id]=0});
   G={game:g,phase:"play",diff:df,round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?wpool(df).length:g==="wyr"?WYR.length:EMJ.length)};next()}
@@ -257,6 +257,7 @@ function act(d){if(isHost)handleAct(myId,d);else if(room)room.emit("act",d)}
 setInterval(function(){
   if(!G||G.phase!=="play"||!G.deadline)return;
   var t=$("#tm");if(t&&!G.solved)t.textContent=Math.max(0,Math.ceil((G.deadline-Date.now())/1000))+"s";
+  if(G.game==="battle"){battleTick();return}
   if(isHost&&G.game==="chain"){if(Date.now()>G.deadline)chainTimeout();return}
   if(isHost&&G.game==="who"){whoTick();return}
   if(isHost&&!G.solved&&Date.now()>G.deadline){G.solved={timeout:1};push();setTimeout(next,2500)}},1000);
@@ -356,7 +357,7 @@ function vEnd(){var ps=players().slice().sort(function(a,b){var al=function(p){r
 var QS=["Tumhari sabse badi darr kya hai?","Agar ek din ke liye invisible ho jao to sabse pehle kya karoge?","Tumhara sabse ajeeb shauq kya hai?","Tumhari life ka sabse sharmnak moment?","1 crore mil jaye to sabse pehle kya khareedoge?","Tumhari sabse buri aadat kya hai?","Tumhara koi chhupa hua talent?","Aisi cheez jo tum dobara kabhi nahi khaoge?","Phone me sabse zyada kaunsi app use karti/karte ho?","Tumhari dream job kya hai?","Agar tum koi jaanwar hote to kaunsa?","Raat ko 3 baje neend khul jaye to kya karte ho?","Tumhari sabse badi khoobi kya hai?","Kal duniya khatam ho rahi ho to aakhri kaam kya karoge?","Tumhara sabse darawna sapna?","Bachpan ki sabse yaadgar shararat?","Tumhara guilty pleasure kya hai?","Kisi se milte hi sabse pehle kya notice karte ho?","Tumhara sabse bekaar jhooth jo tumne kabhi bola?","Ek cheez jo tum sab ko batana chahte ho par batate nahi?"];
 var WW={r:-1,ans:{},by:[]},wSent="",wMy={},gPick=null;
 function minP(){return G&&G.game==="who"?3:2}
-function whoNote(){if(!G||G.game!=="who")return"";return'<h2>Kaise khelte hain</h2><div class="card"><p class="mut">1) Sawal aata hai, sab anonymous jawab likhte hain.<br>2) Jawab ek ek karke dikhte hain, sab guess karte hain kis ne likha.<br>3) Sahi guess = +10. Tumhara jawab jitne log galat guess karein, har galat par +5.<br>4) Aakhir me poori list dikhti hai ki kis ne kis ko guess kiya. 4 rounds, kam se kam 3 players.</p></div>'}
+function whoNote(){if(G&&G.game==="battle")return'<h2>Kaise khelte hain</h2><div class="card"><p class="mut">1) Sab ko ek hi word milta hai.<br>2) 1 minute me sab apni drawing banate hain.<br>3) AI sab ki drawings dekh ke score deta hai aur winner chunta hai.<br>4) Aakhir me sab ki drawings dikhti hain, aur sab se buri drawing ko AI roast karta hai 😄<br>Kam se kam 2 players.</p></div>';if(!G||G.game!=="who")return"";return'<h2>Kaise khelte hain</h2><div class="card"><p class="mut">1) Sawal aata hai, sab anonymous jawab likhte hain.<br>2) Jawab ek ek karke dikhte hain, sab guess karte hain kis ne likha.<br>3) Sahi guess = +10. Tumhara jawab jitne log galat guess karein, har galat par +5.<br>4) Aakhir me poori list dikhti hai ki kis ne kis ko guess kiya. 4 rounds, kam se kam 3 players.</p></div>'}
 function startWho(){var sc={},nm={};players().forEach(function(p){sc[p.id]=0;nm[p.id]=p.name});
   G={game:"who",phase:"play",gid:Date.now(),round:-1,total:Math.min(4,QS.length),scores:sc,names:nm,order:shuf(QS.length),log:[],hist:[]};whoNextRound()}
 function whoNextRound(){
@@ -420,16 +421,120 @@ function whoSummary(){var H=G.hist||[];if(!H.length)return"";
     if(e.q!==lq){det+='<p class="mut" style="margin:12px 0 4px"><b>'+esc(QS[e.q]||"")+'</b></p>';lq=e.q}
     det+='<div style="margin:6px 0"><b>“'+esc(e.a)+'”</b> — ✍️ '+gname(e.by)+'<br>'+(Object.keys(g).map(function(k){return'<span class="mut">'+gname(k)+' → '+gname(g[k])+' '+(g[k]===e.by?"✅":"❌")+'</span>'}).join("<br>")||'<span class="mut">Kisi ne guess nahi kiya</span>')+'</div>'});
   return(aw?'<h2>Awards</h2><div class="card">'+aw+'</div>':"")+'<details class="card"><summary style="cursor:pointer;font-weight:700">🔍 Kis ne kis ko guess kiya (poori list)</summary>'+det+'</details>'}
+/* ===== Draw Battle (AI judge) ===== */
+var AI_URL="https://frosty-salad-ebf5.haidernoshad0-9a3.workers.dev/";
+var BTIME=60000,BS={sent:0,crid:0,irid:0,jr:0,n:0,imgs:{},ref:null,loading:0,err:0},bcv=null,bcx=null,bpen="#111111",bsz=8;
+var BROAST=["Ye drawing dekh ke pencil bhi resign dene ki soch rahi hai 😭","Itni artistic galti jaan boojh ke karna bhi talent hai!","Picasso ne ye dekha to apni aankhen band kar leta 🙈","Ye drawing nahi, canvas ke saath hui wardaat hai 😂","Bacha jis ne pehli baar pencil pakdi ho wo bhi isse behtar banata!"];
+function bSubsRef(){return db.ref("pp/rooms/"+code+"/subs")}
+function startBattle(){
+  if(!isHost||players().length<2)return;
+  var ps=players(),sc=(G&&G.scores)||{},used=(G&&G.used)||[],pool=WORDS.concat(WORDS_D.medium),w,t=0,rd=(G&&G.round>=0)?G.round+1:0;
+  ps.forEach(function(p){if(sc[p.id]===undefined)sc[p.id]=0});
+  do{w=pool[Math.floor(Math.random()*pool.length)];t++}while(used.indexOf(w)>=0&&t<60);
+  used=used.concat([w]).slice(-30);
+  var rid=Date.now();
+  G={game:"battle",phase:"play",stage:"draw",rid:rid,round:rd,word:w,scores:sc,used:used,deadline:rid+BTIME+2500,log:[]};
+  BS.n=0;BS.jr=0;BS.err=0;
+  try{if(BS.ref)BS.ref.off()}catch(e){}
+  var r=bSubsRef();
+  r.remove().catch(function(){}).then(function(){
+    BS.ref=r;
+    r.on("value",function(s){var v=s.val()||{},n=0;Object.keys(v).forEach(function(k){if(v[k]&&G&&v[k].r===G.rid)n++});BS.n=n});
+    push()})}
+function ensureB(){if(bcv)return;
+  bcv=document.createElement("canvas");bcv.width=bcv.height=600;bcx=bcv.getContext("2d");bcx.lineCap="round";bcx.lineJoin="round";
+  var last=null;
+  function pt(e){var r=bcv.getBoundingClientRect();return{x:(e.clientX-r.left)*600/r.width,y:(e.clientY-r.top)*600/r.height}}
+  function ok(){return G&&G.game==="battle"&&G.stage==="draw"&&BS.sent!==G.rid}
+  function st(){var e=bpen==="e";bcx.globalCompositeOperation=e?"destination-out":"source-over";bcx.strokeStyle=e?"#000":bpen;bcx.fillStyle=bcx.strokeStyle;bcx.lineWidth=e?bsz*3:bsz}
+  bcv.addEventListener("pointerdown",function(e){if(!ok())return;e.preventDefault();last=pt(e);st();bcx.beginPath();bcx.arc(last.x,last.y,bcx.lineWidth/2,0,6.2832);bcx.fill();try{bcv.setPointerCapture(e.pointerId)}catch(x){}});
+  bcv.addEventListener("pointermove",function(e){if(!last||!ok())return;var p=pt(e);st();bcx.beginPath();bcx.moveTo(last.x,last.y);bcx.lineTo(p.x,p.y);bcx.stroke();last=p});
+  bcv.addEventListener("pointerup",function(){last=null});bcv.addEventListener("pointercancel",function(){last=null})}
+function bSet(c){bpen=c;render()}
+function bSize(n){bsz=n;render()}
+function bClear(){if(bcx&&BS.sent!==(G&&G.rid))bcx.clearRect(0,0,600,600)}
+function bSubmit(){
+  if(!G||G.game!=="battle"||G.stage!=="draw"||BS.sent===G.rid||!db||!code)return;
+  ensureB();BS.sent=G.rid;
+  var c=document.createElement("canvas");c.width=c.height=256;var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,256,256);x.drawImage(bcv,0,0,256,256);
+  var img=c.toDataURL("image/jpeg",.6);
+  bSubsRef().child(uid).set({n:me.name,i:img,r:G.rid}).catch(function(){BS.err=1;render()});
+  render()}
+function battleTick(){
+  if(G.stage!=="draw")return;
+  var now=Date.now();
+  if(now>G.deadline&&BS.sent!==G.rid)bSubmit();
+  if(isHost&&BS.jr!==G.rid&&(BS.n>=players().length||now>G.deadline+7000))bJudge()}
+function bJudge(){
+  var rid=G.rid;BS.jr=rid;G.stage="judging";G.deadline=0;push();
+  try{if(BS.ref)BS.ref.off()}catch(e){}
+  bSubsRef().once("value").then(function(s){
+    var v=s.val()||{},ps=players().map(function(p){return p.id}),
+      ids=Object.keys(v).filter(function(k){return v[k]&&v[k].r===rid&&v[k].i&&ps.indexOf(k)>=0});
+    if(!ids.length||AI_URL.indexOf("http")!==0)return bFinish(rid,ids,null);
+    var items=ids.map(function(k){return{n:v[k].n||"Player",img:String(v[k].i).split(",")[1]}});
+    var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ctl)ctl.abort()},45000);
+    fetch(AI_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({word:G.word,items:items}),signal:ctl?ctl.signal:undefined})
+      .then(function(r){return r.json()})
+      .then(function(j){clearTimeout(tm);bFinish(rid,ids,j)})
+      .catch(function(){clearTimeout(tm);bFinish(rid,ids,null)})
+  }).catch(function(){bFinish(rid,[],null)})}
+function bFinish(rid,ids,j){
+  if(!G||G.rid!==rid||G.stage==="result")return;
+  var n=ids.length,sc={},ai=false,i,cm="",ro="",win=null,bad=null;
+  if(j&&n&&j.scores&&j.scores.length===n){ai=true;for(i=0;i<n;i++){var x=Number(j.scores[i]);if(!isFinite(x)){ai=false;break}sc[ids[i]]=Math.max(0,Math.min(10,Math.round(x)))}}
+  if(ai){cm=String(j.comment||"").slice(0,220);ro=String(j.roast||"").slice(0,300)}
+  else{sc={};ids.forEach(function(k){sc[k]=2+Math.floor(Math.random()*7)});cm=n?"AI abhi busy hai, is liye random judge ne faisla kiya 😅":"";ro=BROAST[Math.floor(Math.random()*BROAST.length)]}
+  function pick(cmp){var b=null;ids.forEach(function(k){if(b===null||cmp(sc[k],sc[b]))b=k});return b}
+  win=pick(function(a,b){return a>b});bad=pick(function(a,b){return a<b});
+  if(ai){var wi=ids[j.winner],bi=ids[j.worst];if(wi&&sc[wi]===sc[win])win=wi;if(bi&&sc[bi]===sc[bad]&&bi!==win)bad=bi}
+  if(bad===win)bad=ids.filter(function(k){return k!==win})[0]||null;
+  ids.forEach(function(k){G.scores[k]=(G.scores[k]||0)+sc[k]});
+  if(win)G.scores[win]+=5;
+  G.res={w:win,x:bad,sc:sc,c:cm,r:ro,ai:ai,ids:ids};G.stage="result";G.deadline=0;push()}
+function bLoad(){
+  if(BS.irid===G.rid||BS.loading===G.rid)return;
+  var rid=G.rid;BS.loading=rid;
+  bSubsRef().once("value").then(function(s){var v=s.val()||{},o={};Object.keys(v).forEach(function(k){if(v[k]&&v[k].r===rid)o[k]=v[k]});BS.imgs=o;BS.irid=rid;render()}).catch(function(){BS.loading=0})}
+function btools(){
+  return'<div class="ch" style="margin-top:10px;align-items:center">'+PC.map(function(c){return'<button onclick="bSet(\''+c+'\')" style="width:34px;height:34px;padding:0;background:'+c+';border:3px solid '+(bpen===c?"#fff":"transparent")+'"></button>'}).join("")+'<button class="'+(bpen==="e"?"on":"")+'" onclick="bSet(\'e\')">🧽 Eraser</button></div>'+
+  '<div class="ch" style="margin-top:8px">'+[[4,"Patla"],[8,"Medium"],[16,"Mota"]].map(function(s){return'<button class="'+(bsz===s[0]?"on":"")+'" onclick="bSize('+s[0]+')">'+s[1]+'</button>'}).join("")+'<button onclick="bClear()">🗑 Clear</button></div>'+
+  '<button class="btn" style="margin-top:12px" onclick="bSubmit()">✅ Done, jama karo</button>'}
+function vBattle(){
+  if(G.stage==="draw"){
+    var sent=BS.sent===G.rid;
+    return'<div class="top"><span class="mut">Round '+(G.round+1)+'</span><span class="tm" id="tm">…</span></div>'+scores()+
+      '<div class="card" style="text-align:center"><div class="mut">Sab ye banao (1 minute)</div><div class="mask">'+esc(G.word)+'</div></div><div id="bch"></div>'+
+      (sent?'<div class="ok">✅ Drawing jama ho gayi. Baaki players ka intezar…</div>':btools())+
+      (BS.err?'<div class="ok" style="color:#ff8a7a">Drawing save nahi hui. Firebase Rules me “subs” allow karo.</div>':"")}
+  if(G.stage==="judging")return scores()+'<div class="card" style="text-align:center"><div class="big">🤖</div><div class="mask" style="font-size:22px;letter-spacing:1px">AI sab ki drawings dekh raha hai…</div><p class="mut">Thoda sa intezar</p></div>';
+  return bResult()}
+function bResult(){
+  var R=G.res||{ids:[],sc:{}};bLoad();var ready=BS.irid===G.rid;
+  var ids=(R.ids||[]).slice().sort(function(a,b){return(R.sc[b]||0)-(R.sc[a]||0)});
+  function im(k){var s=ready&&BS.imgs[k];return s?'<img src="'+esc(s.i)+'" style="width:100%;border-radius:16px;background:#fff;display:block">':'<div class="mut" style="padding:50px 0;text-align:center">⏳ Loading…</div>'}
+  function nm(k){var s=ready&&BS.imgs[k];return esc((s&&s.n)||nameOf(k))}
+  var h='';
+  if(R.w)h+='<h1>🏆 '+nm(R.w)+' jeet gaya!</h1><div class="card" style="border:2px solid var(--yel)">'+im(R.w)+'<div style="margin-top:8px"><b>Score: '+(R.sc[R.w]||0)+'/10</b></div>'+(R.c?'<p>'+esc(R.c)+'</p>':'')+'</div>';
+  else h+='<h1>Kisi ne drawing nahi di 😅</h1>';
+  if(ids.length)h+='<h2>Sab ki drawings</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+ids.map(function(k,i){return'<div class="card" style="padding:8px;margin:0">'+im(k)+'<div style="display:flex;justify-content:space-between;gap:6px;margin-top:6px"><b>'+(i+1)+'. '+nm(k)+'</b><b>'+(R.sc[k]||0)+'/10</b></div></div>'}).join("")+'</div>';
+  var miss=players().filter(function(p){return ids.indexOf(p.id)<0});
+  if(miss.length)h+='<p class="mut">Drawing nahi di: '+miss.map(function(p){return esc(p.name)}).join(", ")+'</p>';
+  if(R.x)h+='<h2>🔥 Sab se buri drawing</h2><div class="card" style="border:2px solid var(--red)">'+im(R.x)+'<div style="margin-top:8px"><b>'+nm(R.x)+' · '+(R.sc[R.x]||0)+'/10</b></div><p>'+esc(R.r||"")+'</p></div>';
+  h+='<h2>Total points</h2>'+scores();
+  h+=(isHost?'<button class="btn" onclick="startBattle()">🔁 Next round (naya word)</button><br>':'<p class="mut" style="text-align:center">Host agla round shuru karega…</p>')+'<button class="btn alt" onclick="leave()">Home</button>';
+  return h}
 function render(){
   var app=$("#app"),gi=$("#gi"),v=gi?gi.value:"",f=gi&&document.activeElement===gi,h;
   if(!me)h=vLogin();
   else if(!room)h=tab==="fr"?vFriends():tab==="me"?vMe():vHome();
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
-  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():vEmoji())}
+  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():G.game==="battle"?vBattle():vEmoji())}
   if(me)h+=popups();
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){cx.clearRect(0,0,600,600);lastRound=G.round}}
+  var bh=$("#bch");if(bh){ensureB();bh.appendChild(bcv);if(BS.crid!==G.rid){bcx.clearRect(0,0,600,600);BS.crid=G.rid}}
   if(G&&G.phase==="lobby")lastRound=-9;
   var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}sync()}
 if("serviceWorker"in navigator&&location.protocol.indexOf("http")===0)window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
