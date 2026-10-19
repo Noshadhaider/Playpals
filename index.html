@@ -290,10 +290,18 @@ function chainEnd(){var a=players().filter(function(p){return(G.lives[p.id]||0)>
 function newRound(){var ks=Object.keys(CATS).filter(function(k){return k!==G.cat&&k!=="all"}),k=G.cat==="all"?"all":ks[Math.floor(Math.random()*ks.length)];
   G.cat=k;G.used=[];G.need="";G.rnd=(G.rnd||1)+1;G.log=G.log.concat(["🔄 Round "+G.rnd+": "+CATS[k].e+" "+CATS[k].n]).slice(-4)}
 function afterLoss(){if(chainEnd()){G.phase="end";push();return}var out=(G.lives[G.turn]||0)<=0;nextTurn();if(out)newRound();push()}
-function chainAct(id,d){
+var WOK={},chk=0;
+function isWord(w,cb){if(WOK[w]!==undefined)return cb(WOK[w]);
+  var done=0,t=setTimeout(function(){if(!done){done=1;cb(true)}},5000);
+  fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(w)).then(function(r){if(done)return;done=1;clearTimeout(t);if(r.status===404){WOK[w]=false;cb(false)}else{if(r.ok)WOK[w]=true;cb(true)}}).catch(function(){if(done)return;done=1;clearTimeout(t);cb(true)})}
+function chainAct(id,d,chkd){
   if(d.t!=="word"||id!==G.turn)return;
   var w=norm(d.v),L=CATS[G.cat].w,m="";if(!w)return;
+  if(G.cat==="all"&&!chkd&&/^[a-z]{2,}$/.test(w)&&G.used.indexOf(w)<0&&(!G.need||w.charAt(0)===G.need)&&WOK[w]===undefined){
+    if(chk)return;chk=1;var rd=G.rnd;
+    isWord(w,function(){chk=0;if(G&&G.game==="chain"&&G.phase==="play"&&G.turn===id&&G.rnd===rd)chainAct(id,d,1)});return}
   if(G.cat==="all"?!/^[a-z]{2,}$/.test(w):L.indexOf(w)<0)m=G.cat==="all"?"sahi word likho (sirf letters)":"is not in "+CATS[G.cat].n;
+  else if(G.cat==="all"&&WOK[w]===false)m="ye English word nahi hai";
   else if(G.used.indexOf(w)>-1)m="already used";
   else if(G.need&&w.charAt(0)!==G.need)m="must start with "+G.need.toUpperCase();
   if(m){G.lives[id]=Math.max(0,(G.lives[id]||0)-1);G.log=G.log.concat([nameOf(id)+": "+String(d.v).slice(0,20)+" ❌ "+m+(G.lives[id]?"":" — OUT!")]).slice(-4);afterLoss();return}
