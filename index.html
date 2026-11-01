@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PlayPals</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{--bg:#0a0a0a;--card:#161616;--ink:#fff;--mut:#9a9a9a;--lime:#c9f03c;--yel:#ffd500;--grn:#19b45a;--red:#ff4b3a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
@@ -38,30 +38,12 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 .ex{font-size:46px;line-height:1;background:#222;border:2px solid #333;border-radius:18px;padding:8px 12px;min-width:66px;text-align:center}.exr{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px}
 .step{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0}.step button{width:46px;height:46px;border:0;border-radius:50%;background:#262626;color:#fff;font-size:26px;font-weight:800}.step b{font-size:34px;min-width:110px;text-align:center;color:var(--lime)}
 @keyframes pin{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
-.rc-wrap{position:relative;border-radius:22px;overflow:hidden;background:#000;margin-bottom:10px}
-.rc-cv{width:100%;height:56vh;display:block;touch-action:none}
-.rc-hud{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;pointer-events:none}
-.rc-pill{background:#000a;border-radius:999px;padding:6px 12px;font-weight:800;font-size:13px}
-.rc-ctl{position:absolute;left:0;right:0;bottom:10px;padding:0 12px;display:flex;justify-content:space-between;align-items:flex-end}
-.rc-wheelwrap{width:96px;height:96px;pointer-events:auto}
-.rc-wheel{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a3a,#111 70%);border:5px solid #000;box-shadow:0 5px 14px #0008,inset 0 0 0 3px #555;position:relative}
-.rc-wheel::before{content:"";position:absolute;inset:34%;border-radius:50%;background:#1c1c1c;border:3px solid #444}
-.rc-wheel::after{content:"";position:absolute;left:8%;right:8%;top:47%;height:6%;background:#555;border-radius:3px}
-.rc-right{display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto}
-.rc-pedals{display:flex;gap:8px}
-.rc-pedal{width:46px;height:58px;border-radius:10px;border:0;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #000}
-.rc-pedal.gas{background:linear-gradient(#2d2d2d,#131313)}
-.rc-pedal.brake{background:linear-gradient(#3a1515,#140707)}
-.rc-pedal:active{transform:translateY(3px)}
-.rc-ab{width:58px;height:58px;border-radius:50%;border:3px solid #fff5;background:var(--yel);color:#111;font-size:22px;font-weight:900}
-.rc-ab:disabled{background:#333;color:#888;border-color:#0000}
-.rc-wheel,.rc-pedal,.rc-ab{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 </style></head><body><div id="app"></div><div id="ov"></div><div id="inv"></div>
 <script>
 var $=function(s){return document.querySelector(s)};
 var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 var AV=["🐢","🦊","🐸","🐼","🦁","🐙","🐯","🐵"];
-var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"},who:{n:"Who Wrote It?",e:"🕵️",c:"#ff9ecb",d:"Anonymous answers, guess the writer"},battle:{n:"Draw Battle",e:"🖌️",c:"#ff9e4a",d:"Same word, you set the timer, AI judges & roasts"},race:{n:"Battle Racer 3D",e:"🏎️",c:"#6be3ff",d:"Car card chuno, 3D race jeeto, rivals ko trap karo"}};
+var GAMES={draw:{n:"Draw & Guess",e:"🎨",c:"#ffd500",d:"One draws, others guess"},wyr:{n:"Would You Rather",e:"🤔",c:"#c9f03c",d:"Pick one, see who matches"},emoji:{n:"Emoji Guess",e:"🎬",c:"#7be0a0",d:"Decode the emojis"},chain:{n:"Word Chain",e:"🔗",c:"#7bb8ff",d:"Category words, last letter chain"},who:{n:"Who Wrote It?",e:"🕵️",c:"#ff9ecb",d:"Anonymous answers, guess the writer"},battle:{n:"Draw Battle",e:"🖌️",c:"#ff9e4a",d:"Same word, you set the timer, AI judges & roasts"}};
 var WORDS="apple banana house car tree sun moon fish cat dog bird flower pizza burger cake phone clock chair bed book ball boat plane train bike hat shoe glasses cup door key umbrella star heart rain snowman guitar camera robot rocket pencil candle bridge".split(" ");
 var DIFF={easy:{n:"Easy",e:"🟢",t:90,p:10,d:"Aasan cheezein (apple, cat, sun). 90 sec, sahi guess +10 points."},medium:{n:"Medium",e:"🟡",t:75,p:15,d:"Thode mushkil (windmill, volcano, pirate). 75 sec, sahi guess +15 points."},hard:{n:"Hard",e:"🔴",t:60,p:20,d:"Bohot mushkil (gravity, orchestra, echo). 60 sec, sahi guess +20 points."}};
 var WORDS_D={easy:WORDS,
@@ -274,7 +256,7 @@ function saveProf(){me.name=($("#pn").value.trim()||me.name).slice(0,14);me.bio=
 function pickE(a){me.emoji=a;saveMe()}
 function setDp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas");c.width=c.height=80;var x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,80,80);me.dp=c.toDataURL("image/jpeg",.7);saveMe()};im.src=r.result};r.readAsDataURL(f)}
 function push(){if(room)room.emit("state",G);render()}
-function startGame(){if(players().length<minP())return;if(G.game==="who")return startWho();if(G.game==="chain")return startChain();if(G.game==="battle")return startBattle();if(G.game==="race")return startRace();
+function startGame(){if(players().length<minP())return;if(G.game==="who")return startWho();if(G.game==="chain")return startChain();if(G.game==="battle")return startBattle();
   var ps=players(),g=G.game,df=G.diff||"easy",tot=g==="draw"?Math.min(8,ps.length*2):Math.min(8,g==="wyr"?WYR.length:EMJ.length);
   var sc={};ps.forEach(function(p){sc[p.id]=0});
   G={game:g,phase:"play",diff:df,round:-1,total:tot,scores:sc,log:[],order:shuf(g==="draw"?wpool(df).length:g==="wyr"?WYR.length:EMJ.length)};next()}
@@ -290,7 +272,6 @@ function next(){
 function handleAct(id,d){if(G&&G.game==="chain"&&G.phase==="play"&&!blocks[id])return chainAct(id,d);
   if(!G||G.phase!=="play"||blocks[id])return;
   if(G.game==="who")return whoAct(id,d);
-  if(G.game==="race")return raceAct(id,d);
   if(d.t==="guess"&&!G.solved){
     var ans=G.game==="draw"?G.word:G.a;
     if(id===G.drawer)return;
@@ -309,7 +290,6 @@ setInterval(function(){
   if(!G||G.phase!=="play"||!G.deadline)return;
   var t=$("#tm");if(t&&!G.solved)t.textContent=fmtT(Math.max(0,Math.ceil((G.deadline-Date.now())/1000)));
   if(G.game==="battle"){battleTick();return}
-  if(G.game==="race"){raceTick();return}
   if(isHost&&G.game==="chain"){if(Date.now()>G.deadline)chainTimeout();return}
   if(isHost&&G.game==="who"){whoTick();return}
   if(isHost&&!G.solved&&Date.now()>G.deadline){G.solved={timeout:1};push();setTimeout(next,2500)}},1000);
@@ -667,167 +647,17 @@ function bResult(){
   h+='<h2>Total points</h2>'+scores();
   h+=(isHost?btPick()+'<button class="btn" onclick="startBattle()">🔁 Next round (naya word)</button><br>':'<p class="mut" style="text-align:center">Host agla round shuru karega…</p>')+'<button class="btn alt" onclick="leave()">Home</button>';
   return h}
-/* ===== Battle Racer 3D ===== */
-var RCARDS=[
- {id:'r',name:'Rocket Red',em:'🔴',color:0xff4b3a,hex:'#ff4b3a',speed:1.12,ab:{key:'nitro',name:'Nitro Dash',icon:'🔥',desc:'3s speed boost'}},
- {id:'g',name:'Ghost Green',em:'🟢',color:0x19b45a,hex:'#19b45a',speed:1.0,ab:{key:'oil',name:'Oil Slick',icon:'🛢️',desc:'Trap chhodo, jo guzre slow ho'}},
- {id:'y',name:'Volt Yellow',em:'🟡',color:0xffd500,hex:'#ffd500',speed:0.97,ab:{key:'emp',name:'EMP Freeze',icon:'⚡',desc:'Aage wale ko 2s freeze karo'}},
- {id:'b',name:'Shield Blue',em:'🔵',color:0x3a9eff,hex:'#3a9eff',speed:1.0,ab:{key:'shield',name:'Shield',icon:'🛡️',desc:'4s traps/freeze se immune'}}
-];
-var RCP=[{x:0,z:-32},{x:22,z:-30},{x:36,z:-14},{x:34,z:8},{x:38,z:26},{x:14,z:34},{x:-12,z:30},{x:-36,z:18},{x:-32,z:-4},{x:-18,z:-26}];
-var RACE_MS=75000,RPICK=0,RPICKI=-1,RDONE=0;
-var RC={scene:null,camera:null,renderer:null,cars:[],oil:[],rid:0,running:false,startPerf:0};
-var RCV=null,RWHEEL=0,RWDRAG=false,RWHEELEL=null,RWBound=0,RKEYS={};
-function racePick(i){if(!G||G.stage!=="pick"||RPICK===G.rid)return;RPICK=G.rid;RPICKI=i;act({t:"pick",v:i});render()}
-function rkd(k){RKEYS[k]=true}function rku(k){RKEYS[k]=false}
-function rwPos(e){var t=e.touches&&e.touches.length?e.touches[0]:e;var r=RWHEELEL.getBoundingClientRect();var cx=r.left+r.width/2;var dx=t.clientX-cx;var v=Math.max(-1,Math.min(1,dx/(r.width/2)));RWHEEL=v;RWHEELEL.style.transform='rotate('+(v*65)+'deg)'}
-function rwStart(e){e.preventDefault();RWDRAG=true;rwPos(e)}
-function rwMove(e){if(RWDRAG){e.preventDefault();rwPos(e)}}
-function rwEnd(){RWDRAG=false;RWHEEL=0;if(RWHEELEL)RWHEELEL.style.transform='rotate(0deg)'}
-function startRace(){
-  if(!isHost||players().length<minP())return;
-  var ps=players(),sc=(G&&G.scores)||{},rd=(G&&G.round>=0)?G.round+1:0;
-  ps.forEach(function(p){if(sc[p.id]===undefined)sc[p.id]=0});
-  var rid=Date.now();
-  G={game:"race",phase:"play",stage:"pick",rid:rid,round:rd,scores:sc,picks:{},times:{},deadline:rid+20000,log:[]};
-  push()}
-function raceBeginRun(){G.stage="race";G.raceStart=Date.now()+3000;G.deadline=G.raceStart+RACE_MS;push()}
-function raceFinishAll(){
-  var ranked=players().slice().sort(function(a,b){
-    var ta=G.times[a.id],tb=G.times[b.id],da=(ta===null||ta===undefined),db2=(tb===null||tb===undefined);
-    if(da&&db2)return 0;if(da)return 1;if(db2)return -1;return ta-tb});
-  var pts=[10,6,3];
-  ranked.forEach(function(p,i){if(G.times[p.id]===null||G.times[p.id]===undefined)return;G.scores[p.id]=(G.scores[p.id]||0)+(pts[i]||1)});
-  G.stage="result";G.deadline=0;push()}
-function raceAct(id,d){
-  if(!G||G.game!=="race")return;
-  if(d.t==="pick"&&G.stage==="pick"&&G.picks[id]===undefined){G.picks[id]=d.v;
-    if(Object.keys(G.picks).length>=players().length)raceBeginRun();else push()}
-  if(d.t==="finish"&&G.stage==="race"&&G.times[id]===undefined){G.times[id]=d.v;
-    if(Object.keys(G.times).length>=players().length)raceFinishAll();else push()}}
-function raceTick(){if(!isHost)return;
-  if(G.stage==="pick"&&Date.now()>G.deadline){players().forEach(function(p){if(G.picks[p.id]===undefined)G.picks[p.id]=Math.floor(Math.random()*RCARDS.length)});raceBeginRun();return}
-  if(G.stage==="race"&&Date.now()>G.deadline){players().forEach(function(p){if(G.times[p.id]===undefined)G.times[p.id]=null});raceFinishAll()}}
-function ensureRaceCanvas(){if(RCV)return;RCV=document.createElement('canvas');RCV.className='rc-cv'}
-function makeRaceCar(hexColor){
-  var g=new THREE.Group();
-  var body=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.8,4),new THREE.MeshStandardMaterial({color:hexColor}));body.position.y=0.7;g.add(body);
-  var cab=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.6,1.8),new THREE.MeshStandardMaterial({color:0x111111}));cab.position.set(0,1.25,-0.2);g.add(cab);
-  [[-1.1,-1.3],[1.1,-1.3],[-1.1,1.3],[1.1,1.3]].forEach(function(p){
-    var w=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.5,12),new THREE.MeshStandardMaterial({color:0x111111}));
-    w.rotation.z=Math.PI/2;w.position.set(p[0],0.5,p[1]);g.add(w)});
-  return g}
-function initRaceScene(){
-  var scene=new THREE.Scene();scene.background=new THREE.Color(0x0a1a12);scene.fog=new THREE.Fog(0x0a1a12,60,170);
-  var camera=new THREE.PerspectiveCamera(62,1,0.1,500);
-  if(RC.renderer)try{RC.renderer.dispose()}catch(e){}
-  var renderer=new THREE.WebGLRenderer({canvas:RCV,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  scene.add(new THREE.HemisphereLight(0xffffff,0x224422,0.9));
-  var sun=new THREE.DirectionalLight(0xffffff,0.9);sun.position.set(30,50,10);scene.add(sun);
-  var ground=new THREE.Mesh(new THREE.PlaneGeometry(400,400),new THREE.MeshStandardMaterial({color:0x1b3a24}));
-  ground.rotation.x=-Math.PI/2;scene.add(ground);
-  var tsh=new THREE.Shape();tsh.moveTo(RCP[0].x,RCP[0].z);RCP.forEach(function(p){tsh.lineTo(p.x,p.z)});tsh.closePath();
-  var track=new THREE.Mesh(new THREE.ShapeGeometry(tsh),new THREE.MeshStandardMaterial({color:0x2a2a2a}));
-  track.rotation.x=-Math.PI/2;track.position.y=0.02;scene.add(track);
-  RCP.forEach(function(p,i){
-    var ring=new THREE.Mesh(new THREE.TorusGeometry(6,0.4,8,20),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x333333}));
-    ring.position.set(p.x,2.2,p.z);scene.add(ring);
-    for(var k=-1;k<=1;k+=2){var cone=new THREE.Mesh(new THREE.ConeGeometry(0.8,2,8),new THREE.MeshStandardMaterial({color:i%2?0xffd500:0xff4b3a}));
-      cone.position.set(p.x+k*8,1,p.z+k*2);scene.add(cone)}});
-  var ps=players();RC.cars=[];RC.oil=[];
-  ps.forEach(function(p,idx){
-    var ci=(G.picks&&G.picks[p.id]!==undefined)?G.picks[p.id]:0,c=RCARDS[ci]||RCARDS[0];
-    var mesh=makeRaceCar(c.color);scene.add(mesh);var start=RCP[0];
-    RC.cars.push({pid:p.id,name:p.name,card:c,mesh:mesh,isPlayer:p.id===myId,
-      x:start.x+idx*3-ps.length*1.5,z:start.z+idx*2,ang:0,cp:0,laps:0,
-      speed:0.34*c.speed,abCd:0,frozen:0,oiled:0,shielded:0,boosted:0,finished:false})});
-  RC.scene=scene;RC.camera=camera;RC.renderer=renderer;RC.startPerf=performance.now();
-  RWHEEL=0;RKEYS={};RDONE=0}
-function raceSpeedMul(car){var m=1;if(car.boosted>0)m*=1.6;if(car.frozen>0)m*=0.05;if(car.oiled>0)m*=0.4;return m}
-function raceDropOil(car){RC.oil.push({x:car.x,z:car.z,t:9,owner:car})}
-function raceDoAbility(car,ai){
-  var ab=car.card.ab.key;car.abCd=ab==="nitro"?8:ab==="oil"?10:ab==="emp"?12:14;
-  if(ab==="nitro")car.boosted=3;if(ab==="oil")raceDropOil(car);if(ab==="shield")car.shielded=4;
-  if(ab==="emp"){var best=null,bd=ai?16:18;RC.cars.forEach(function(o){if(o===car||o.finished)return;var dx=o.x-car.x,dz=o.z-car.z,d=Math.sqrt(dx*dx+dz*dz);
-    var fwd=Math.sin(car.ang)*dx+Math.cos(car.ang)*dz;if(d<bd&&fwd>0){bd=d;best=o}});if(best&&best.shielded<=0)best.frozen=2}}
-function raceUseAbility(){var car=RC.cars.filter(function(c){return c.isPlayer})[0];if(!car||car.abCd>0||car.finished)return;raceDoAbility(car,false)}
-function raceStepCar(car,dt){
-  if(car.finished)return;var turn=0;
-  if(car.isPlayer)turn=RWHEEL;
-  else{var want=Math.atan2(RCP[car.cp].x-car.x,RCP[car.cp].z-car.z),diff=Math.atan2(Math.sin(want-car.ang),Math.cos(want-car.ang));
-    turn=Math.max(-1,Math.min(1,diff*2.2));
-    if(car.abCd<=0&&Math.random()<0.01)raceDoAbility(car,true)}
-  car.ang+=turn*1.8*dt;
-  var sp=car.speed*raceSpeedMul(car)*(car.isPlayer?(RKEYS.G?1.3:(RKEYS.B?0.35:0.75)):1);
-  car.x+=Math.sin(car.ang)*sp*60*dt;car.z+=Math.cos(car.ang)*sp*60*dt;
-  car.mesh.position.set(car.x,0,car.z);car.mesh.rotation.y=car.ang;
-  car.abCd=Math.max(0,car.abCd-dt);car.frozen=Math.max(0,car.frozen-dt);car.oiled=Math.max(0,car.oiled-dt);
-  car.shielded=Math.max(0,car.shielded-dt);car.boosted=Math.max(0,car.boosted-dt);
-  if(Math.hypot(RCP[car.cp].x-car.x,RCP[car.cp].z-car.z)<9){car.cp++;if(car.cp>=RCP.length){car.cp=0;car.laps++;
-    if(car.laps>=3&&!car.finished){car.finished=true;
-      if(car.isPlayer&&RDONE!==G.rid){RDONE=G.rid;var ms=Math.round(performance.now()-RC.startPerf);act({t:"finish",v:ms});render()}}}}
-  RC.oil.forEach(function(o){if(o.owner===car&&o.t>7)return;var dx=car.x-o.x,dz=car.z-o.z;
-    if(Math.sqrt(dx*dx+dz*dz)<3&&car.shielded<=0&&o.t>0){car.oiled=2;o.t=0}})}
-function raceLoop(ts){
-  if(!$("#rch")||!G||G.game!=="race"||G.stage!=="race"){RC.running=false;return}
-  var dt=Math.min(0.05,(ts-(raceLoop._t||ts))/1000);raceLoop._t=ts;
-  if(Date.now()>=G.raceStart)RC.cars.forEach(function(c){raceStepCar(c,dt)});
-  RC.oil.forEach(function(o){o.t-=dt});RC.oil=RC.oil.filter(function(o){return o.t>-3});
-  var p=RC.cars.filter(function(c){return c.isPlayer})[0];
-  if(p&&RC.camera){var bx=-Math.sin(p.ang)*9,bz=-Math.cos(p.ang)*9;
-    RC.camera.position.set(p.x+bx,4.5,p.z+bz);RC.camera.lookAt(p.x,1,p.z);
-    var lp=$("#rcLap");if(lp)lp.textContent=(Date.now()<G.raceStart?"Get Ready…":"Lap "+Math.min(p.laps+1,3)+"/3");
-    var ab=$("#rcAb");if(ab){ab.disabled=p.abCd>0;ab.textContent=p.card.ab.icon+(p.abCd>0?" "+Math.ceil(p.abCd):"")}}
-  if(RC.renderer&&RC.scene&&RC.camera)RC.renderer.render(RC.scene,RC.camera);
-  requestAnimationFrame(raceLoop)}
-function vRace(){return G.stage==="pick"?vRacePick():G.stage==="race"?vRaceRun():vRaceResult()}
-function vRacePick(){
-  var n=Object.keys(G.picks||{}).length,tot=players().length;
-  var myPick=(G.picks&&G.picks[myId]!==undefined)?G.picks[myId]:(RPICK===G.rid?RPICKI:undefined);
-  return'<div class="top"><span class="mut">Apni car chuno</span><span class="tm" id="tm">…</span></div>'+
-    '<div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+RCARDS.map(function(c,i){
-      return'<div class="g" style="background:'+c.hex+';flex-direction:column;align-items:flex-start;'+(myPick===i?'outline:3px solid #fff':'')+'" onclick="racePick('+i+')"><span class="e">'+c.em+'</span><b>'+c.name+'</b><small>'+c.ab.icon+' '+c.ab.name+' — '+c.ab.desc+'</small></div>'
-    }).join('')+'</div>'+
-    (myPick!==undefined?'<div class="ok">✅ '+RCARDS[myPick].name+' select ki. Baaki ka wait… ('+n+'/'+tot+')</div>':'<p class="mut" style="text-align:center">Card choose karte hi race shuru hone ka wait hoga</p>')}
-function vRaceRun(){
-  return'<div class="rc-wrap"><div id="rch"></div>'+
-    '<div class="rc-hud"><div class="rc-pill" id="rcLap">Lap 1/3</div><div class="rc-pill" id="tm">…</div></div>'+
-    '<div class="rc-ctl"><div class="rc-wheelwrap"><div class="rc-wheel" id="rcWheel"></div></div>'+
-    '<div class="rc-right"><button class="rc-ab" id="rcAb" onclick="raceUseAbility()">⚡</button>'+
-    '<div class="rc-pedals"><button class="rc-pedal brake" ontouchstart="rkd(\'B\')" ontouchend="rku(\'B\')" onmousedown="rkd(\'B\')" onmouseup="rku(\'B\')" oncontextmenu="return false">🛑</button>'+
-    '<button class="rc-pedal gas" ontouchstart="rkd(\'G\')" ontouchend="rku(\'G\')" onmousedown="rkd(\'G\')" onmouseup="rku(\'G\')" oncontextmenu="return false">⛽</button></div></div></div>'+
-    (RDONE===G.rid?'<div class="ok">✅ Aapki race khatam! Baaki players ka wait…</div>':'<p class="mut" style="text-align:center">Ghuma kar steer karo, pedal daba ke gas/brake, ⚡ se ability use karo</p>')}
-function vRaceResult(){
-  var ranked=players().slice().sort(function(a,b){
-    var ta=(G.times||{})[a.id],tb=(G.times||{})[b.id],da=(ta===null||ta===undefined),db2=(tb===null||tb===undefined);
-    if(da&&db2)return 0;if(da)return 1;if(db2)return -1;return ta-tb});
-  var h='<h1>🏁 Race Result</h1><div class="card">'+ranked.map(function(p,i){var t=(G.times||{})[p.id];
-    return'<div class="pl"><span class="e">'+av(p,24)+'</span><b>'+(i+1)+'. '+esc(p.name)+'</b><span class="mut">'+(t===null||t===undefined?'DNF':(t/1000).toFixed(1)+'s')+'</span></div>'}).join('')+'</div>';
-  h+='<h2>Total points</h2>'+scores();
-  h+=(isHost?'<button class="btn" onclick="startRace()">🔁 Next race (nayi track)</button><br>':'<p class="mut" style="text-align:center">Host agli race shuru karega…</p>');
-  h+='<button class="btn alt" onclick="leave()">Home</button>';
-  return h}
 function render(){
   var app=$("#app"),gi=$("#gi"),v=gi?gi.value:"",f=gi&&document.activeElement===gi,h;
   if(!me)h=vLogin();
   else if(!room)h=tab==="fr"?vFriends():tab==="me"?vMe():vHome();
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
-  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():G.game==="battle"?vBattle():G.game==="race"?vRace():vEmoji())}
+  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():G.game==="battle"?vBattle():vEmoji())}
   if(me)h+=popups();
   app.innerHTML=h;
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){strokes=[];cx.clearRect(0,0,600,600);lastRound=G.round}}
   var bh=$("#bch");if(bh){ensureB();bh.appendChild(bcv);if(BS.crid!==G.rid){bStrokes=[];bcx.clearRect(0,0,600,600);BS.crid=G.rid}}
-  var rh=$("#rch");
-  if(rh){ensureRaceCanvas();rh.appendChild(RCV);if(RC.rid!==G.rid){initRaceScene();RC.rid=G.rid}
-    var rcw=RCV.clientWidth||300,rch2=RCV.clientHeight||300;
-    if(RC.renderer){RC.renderer.setSize(rcw,rch2,false);if(RC.camera){RC.camera.aspect=rcw/rch2;RC.camera.updateProjectionMatrix()}}
-    if(!RC.running){RC.running=true;requestAnimationFrame(raceLoop)}}
-  var rw=$("#rcWheel");
-  if(rw&&rw!==RWHEELEL){RWHEELEL=rw;
-    rw.addEventListener('touchstart',rwStart,{passive:false});rw.addEventListener('touchmove',rwMove,{passive:false});
-    rw.addEventListener('touchend',rwEnd);rw.addEventListener('mousedown',rwStart);
-    if(!RWBound){RWBound=1;window.addEventListener('mousemove',rwMove);window.addEventListener('mouseup',rwEnd)}}
   if(G&&G.phase==="lobby")lastRound=-9;
   var ni=$("#gi");if(ni){ni.value=v;if(f)ni.focus()}sync()}
 if("serviceWorker"in navigator&&location.protocol.indexOf("http")===0)window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
