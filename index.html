@@ -48,6 +48,17 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 .drawbottom .row{margin:0 0 6px}
 .drawbottom .log{font-size:12px;max-height:70px;overflow:auto}
 .drawbar,.rc-pal,.drawbottom{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+
+/* ===== Draw Battle: full-screen locked canvas ===== */
+html.bl,html.bl body{overflow:hidden;height:100%;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none}
+html.bl body{position:fixed;inset:0;width:100%}
+#bch{position:fixed;left:10px;right:10px;top:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:calc(54px + env(safe-area-inset-top,0px)) 0 calc(14px + env(safe-area-inset-bottom,0px));z-index:1;pointer-events:none}
+#bch canvas{width:min(100%,calc(100vh - 76px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));width:min(100%,calc(100dvh - 76px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));height:auto;aspect-ratio:1;pointer-events:auto;box-shadow:0 10px 30px #0008}
+.bpill{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:8px;background:#111c;backdrop-filter:blur(8px);border-radius:999px;padding:5px 6px 5px 12px;font-weight:800;font-size:14px;white-space:nowrap}
+.bpill .tm{font-size:13px;padding:3px 10px}
+.bfab{position:fixed;right:12px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:5;width:54px;height:54px;font-size:24px}
+.bpanel{position:fixed;right:10px;bottom:calc(82px + env(safe-area-inset-bottom,0px));z-index:4;width:min(92vw,340px);max-height:60vh;max-height:60dvh;overflow:auto;background:#161616f5;backdrop-filter:blur(8px);border:2px solid var(--lime);border-radius:20px;padding:4px 12px 12px;touch-action:pan-y;animation:pin .15s ease-out}
+.bmsg{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;background:#111e;border-radius:999px;padding:10px 16px;font-weight:700;font-size:14px;text-align:center;white-space:nowrap}
 </style></head><body><div id="app"></div><div id="ov"></div><div id="inv"></div>
 <script>
 var $=function(s){return document.querySelector(s)};
@@ -68,6 +79,10 @@ var WORDS_B=WORDS_D.medium.concat(["bagpipe", "barbecue", "battery", "binoculars
 var EX={apple:"🍎",banana:"🍌",house:"🏠",car:"🚗",tree:"🌳",sun:"☀️",moon:"🌙",fish:"🐟",cat:"🐱",dog:"🐶",bird:"🐦",flower:"🌸",pizza:"🍕",burger:"🍔",cake:"🍰",phone:"📱",clock:"🕒",chair:"🪑",bed:"🛏️",book:"📖",ball:"⚽",boat:"⛵",plane:"✈️",train:"🚆",bike:"🚲",hat:"🎩",shoe:"👟",glasses:"👓",cup:"☕",door:"🚪",key:"🔑",umbrella:"☂️",star:"⭐",heart:"❤️",rain:"🌧️",snowman:"⛄",guitar:"🎸",camera:"📷",robot:"🤖",rocket:"🚀",pencil:"✏️",candle:"🕯️",bridge:"🌉",
 bicycle:"🚲",butterfly:"🦋",elephant:"🐘",giraffe:"🦒",volcano:"🌋",windmill:"🌬️",lighthouse:"🗼",pyramid:"🔺",scissors:"✂️",spider:"🕷️",tractor:"🚜",helicopter:"🚁",castle:"🏰",dinosaur:"🦖",fireworks:"🎆",penguin:"🐧",kangaroo:"🦘",ladder:"🪜",mountain:"⛰️",rainbow:"🌈",sandwich:"🥪",telescope:"🔭",tornado:"🌪️",trumpet:"🎺",waterfall:"🏞️",backpack:"🎒",compass:"🧭",cactus:"🌵",igloo:"🧊",skateboard:"🛹",sunflower:"🌻",submarine:"🌊",hammer:"🔨",parachute:"🪂",pirate:"🏴‍☠️",scarecrow:"🌾",vampire:"🧛",ambulance:"🚑",campfire:"🔥",dragon:"🐉",
 gravity:"🍎",nightmare:"😱",earthquake:"🏚️",photograph:"📸",electricity:"⚡",imagination:"💭",pollution:"🏭",friendship:"🤝",silence:"🤫",freedom:"🕊️",memory:"🧠",laughter:"😂",magician:"🎩",detective:"🕵️",astronaut:"👨‍🚀",quicksand:"⏳",skeleton:"💀",jellyfish:"🪼",orchestra:"🎻",laboratory:"🧪",microscope:"🔬",avalanche:"🏔️",eclipse:"🌑",tsunami:"🌊",boomerang:"🪃",chandelier:"💡",accordion:"🪗",architect:"📐",carnival:"🎪",hurricane:"🌀",internet:"🌐",jealousy:"😒",teamwork:"🙌",shadow:"👤",echo:"🗣️"};
+var EX2={sandal:"🩴",comb:"💇",spoon:"🥄",fork:"🍴",knife:"🔪",bottle:"🍼",lamp:"🪔",mirror:"🪞",table:"🍽️",sofa:"🛋️",window:"🪟",fan:"💨",soap:"🧼",towel:"🛁",toothbrush:"🪥",bucket:"🪣",broom:"🧹",balloon:"🎈",kite:"🪁",drum:"🥁",flute:"🎶",piano:"🎹",carrot:"🥕",onion:"🧅",potato:"🥔",tomato:"🍅",egg:"🥚",bread:"🍞",cookie:"🍪",icecream:"🍦",lollipop:"🍭",donut:"🍩",corn:"🌽",grapes:"🍇",lemon:"🍋",mango:"🥭",watermelon:"🍉",strawberry:"🍓",pineapple:"🍍",cow:"🐄",horse:"🐴",duck:"🦆",frog:"🐸",snake:"🐍",turtle:"🐢",rabbit:"🐰",lion:"🦁",monkey:"🐒",bear:"🐻",owl:"🦉",bee:"🐝",ant:"🐜",crab:"🦀",whale:"🐋",shark:"🦈",snail:"🐌",bat:"🦇",hand:"✋",foot:"🦶",eye:"👁️",nose:"👃",tooth:"🦷",ear:"👂",leg:"🦵",
+anchor:"⚓",bulldozer:"🚧",cannon:"💥",chimney:"♨️",crown:"👑",drone:"📡",fountain:"⛲",gate:"⛩️",handcuffs:"⛓️",hourglass:"⌛",inkpot:"🖋️",jetski:"🚤",kettle:"🫖",lantern:"🏮",magnet:"🧲",necklace:"📿",octopus:"🐙",paintbrush:"🖌️",quilt:"🧵",raft:"🛶",saxophone:"🎷",scooter:"🛴",tent:"⛺",trampoline:"🤸",unicorn:"🦄",violin:"🎻",wheelbarrow:"🛒",xylophone:"🎼",yacht:"🛥️",zebra:"🦓",beehive:"🐝",carousel:"🎠",chameleon:"🦎",crocodile:"🐊",flamingo:"🦩",hedgehog:"🦔",peacock:"🦚",scorpion:"🦂",seahorse:"🐚",windsurfing:"🏄",snowboard:"🏂",bonfire:"🔥",treasure:"💰",mermaid:"🧜",ghost:"👻",wizard:"🧙",knight:"🛡️",cowboy:"🤠",ninja:"🥷",zombie:"🧟",alien:"👽",mummy:"🤕",
+bagpipe:"🎵",barbecue:"🍖",battery:"🔋",binoculars:"👀",birdcage:"🐦",blender:"🥤",bouquet:"💐",bowling:"🎳",bracelet:"⭕",bubble:"🫧",broccoli:"🥦",calculator:"🧮",camel:"🐫",candy:"🍬",canoe:"🚣",caterpillar:"🐛",cheese:"🧀",chef:"👨‍🍳",chess:"♟️",chicken:"🐔",circus:"🎪",clown:"🤡",coconut:"🥥",cupcake:"🧁",dentist:"🧑‍⚕️",diamond:"💎",dolphin:"🐬",dragonfly:"🐞",dumbbell:"🏋️",eagle:"🦅",earphones:"🎧",envelope:"✉️",escalator:"↗️",fireman:"🧑‍🚒",firetruck:"🚒",flashlight:"🔦",football:"🏈",fridge:"❄️",gift:"🎁",goldfish:"🐠",gorilla:"🦍",headphones:"🎧",helmet:"⛑️",hippo:"🦛",honey:"🍯",hotdog:"🌭",jacket:"🧥",jeans:"👖",joker:"🃏",keyboard:"⌨️",laptop:"💻",leaf:"🍃",lobster:"🦞",mailbox:"📫",map:"🗺️",microphone:"🎤",mosquito:"🦟",motorbike:"🏍️",mushroom:"🍄",notebook:"📓",nurse:"👩‍⚕️",ostrich:"🪶",oven:"🥘",padlock:"🔒",panda:"🐼",parrot:"🦜",pillow:"😴",popcorn:"🍿",pumpkin:"🎃",puzzle:"🧩",ring:"💍",sailor:"🚢",sausage:"🥓",scarf:"🧣",seesaw:"⚖️",sheep:"🐑",shovel:"⛏️",sled:"🛷",slide:"🛝",soldier:"🪖",spaceship:"🛸",squirrel:"🐿️",stairs:"🪜",statue:"🗽",stove:"🍳",suitcase:"🧳",sunglasses:"🕶️",swing:"🎡",sword:"⚔️",teapot:"🍵",thermometer:"🌡️",tiger:"🐯",toaster:"🍞",trophy:"🏆",truck:"🚚",turkey:"🦃",vase:"🏺",volleyball:"🏐",wallet:"👛",wheel:"⚙️",wig:"👩‍🦱",wolf:"🐺",worm:"🪱",wristwatch:"⌚"};
+Object.keys(EX2).forEach(function(k){if(!EX[k])EX[k]=EX2[k]});
 function exOf(w){return EX[w]||"🎨"}
 function exBox(w){return'<div class="ex">'+exOf(w)+'</div>'}
 function fmtT(s){return s>=60?mmss(s):s+"s"}
@@ -135,7 +150,7 @@ function doConnect(c,host,re){
   if(host&&pendGame){db.ref("pp/rooms/"+c+"/host").set(uid);G={game:pendGame,phase:"lobby"};pendGame=null;room.emit("state",G)}else if(host&&re){db.ref("pp/rooms/"+c+"/state").once("value").then(function(s){var v=s.val();if(v){G=nG(v);render()}})}
   render()}
 function newRoom(game){pendGame=game;var c="";for(var i=0;i<4;i++)c+="ABCDEFGHJKLMNPQRSTUVWXYZ".charAt(Math.floor(Math.random()*24));connect(c,true)}
-function leave(){clearInv();try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
+function leave(){toolsOpen=false;clearInv();try{if(room)room.leave()}catch(e){}room=null;code="";G=null;peers=[];isHost=false;history.replaceState(null,"",base());render()}
 function av(p,s){s=s||34;var d=p.dp&&String(p.dp).indexOf("data:image/")===0;return d?'<img src="'+esc(p.dp)+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover">':'<span style="font-size:'+Math.round(s*.8)+'px">'+esc(p.emoji||"🙂")+'</span>'}
 var sentInv={},invs={},invAt={},missed={},invW={},INV_MS=30000,leaveAsk=null,freqs={},fsent={};
 function cd(at){return Math.max(0,Math.ceil((INV_MS-(Date.now()-at))/1000))}
@@ -587,7 +602,7 @@ function bSz(v){bsz=+v;szUI(bsz)}
 function bClear(){if(bcx&&BS.sent!==(G&&G.rid)){bStrokes=[];bcx.clearRect(0,0,600,600)}}
 function bSubmit(){
   if(!G||G.game!=="battle"||G.stage!=="draw"||BS.sent===G.rid||!db||!code)return;
-  ensureB();BS.sent=G.rid;
+  ensureB();BS.sent=G.rid;toolsOpen=false;
   var c=document.createElement("canvas");c.width=c.height=256;var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,256,256);x.drawImage(bcv,0,0,256,256);
   var img=c.toDataURL("image/jpeg",.6);
   bSubsRef().child(uid).set({n:me.name,i:img,r:G.rid}).catch(function(){BS.err=1;render()});
@@ -637,14 +652,14 @@ function bLoad(){
   bSubsRef().once("value").then(function(s){var v=s.val()||{},o={};Object.keys(v).forEach(function(k){if(v[k]&&v[k].r===rid)o[k]=v[k]});BS.imgs=o;BS.irid=rid;render()}).catch(function(){BS.loading=0})}
 function btools(){
   return toolbar(bpen,bst,bsz,"bSet","bStyle","bSz")+'<div class="ch" style="margin-top:8px"><button onclick="bUndo()">↩️ Undo</button><button onclick="bClear()">🗑 Clear</button></div>'+
-  '<button class="btn" style="margin-top:12px" onclick="bSubmit()">✅ Done, jama karo</button>'}
+  '<button class="btn" style="margin-top:12px" onclick="bSubmit()">✅ Done, jama karo</button><button class="btn alt sm" style="margin-top:8px" onclick="if(confirm(\'Game chhod dein?\'))leave()">🚪 Leave game</button>'}
 function vBattle(){
   if(G.stage==="draw"){
-    var sent=BS.sent===G.rid;
-    return'<div class="top"><span class="mut">Round '+(G.round+1)+'</span><span class="tm" id="tm">…</span></div>'+scores()+
-      '<div class="card" style="text-align:center"><div class="mut">Sab ye banao ('+mmss(G.bsec||180)+' min)</div><div class="exr">'+exBox(G.word)+'<div class="mask">'+esc(G.word)+'</div></div></div><div id="bch"></div>'+
-      (sent?'<div class="ok">✅ Drawing jama ho gayi. Baaki players ka intezar…</div>':btools())+
-      (BS.err?'<div class="ok" style="color:#ff8a7a">Drawing save nahi hui. Firebase Rules me “subs” allow karo.</div>':"")}
+    var sent=BS.sent===G.rid;if(BS.crid!==G.rid)toolsOpen=false;
+    var left=Math.max(0,Math.ceil((G.deadline-Date.now())/1000));
+    return'<div class="bpill"><span>'+exOf(G.word)+' '+esc(G.word)+'</span><span class="tm" id="tm">'+fmtT(left)+'</span></div><div id="bch"></div>'+
+      (sent?'<div class="bmsg">✅ Drawing jama ho gayi. Baaki ka intezar…</div>':'<button class="rc-pal bfab" onclick="toggleTools()" title="Colors &amp; tools">🎨</button>'+(toolsOpen?'<div class="bpanel">'+btools()+'</div>':""))+
+      (BS.err?'<div class="bmsg" style="bottom:calc(70px + env(safe-area-inset-bottom,0px));color:#ff8a7a">Drawing save nahi hui. Firebase Rules me “subs” allow karo.</div>':"")}
   if(G.stage==="judging")return scores()+'<div class="card" style="text-align:center"><div class="big">🤖</div><div class="mask" style="font-size:22px;letter-spacing:1px">AI sab ki drawings dekh raha hai…</div><p class="mut">Thoda sa intezar</p></div>';
   return bResult()}
 function bResult(){
@@ -652,7 +667,7 @@ function bResult(){
   var ids=(R.ids||[]).slice().sort(function(a,b){return(R.sc[b]||0)-(R.sc[a]||0)});
   function im(k){var s=ready&&BS.imgs[k];return s?'<img src="'+esc(s.i)+'" style="width:100%;border-radius:16px;background:#fff;display:block">':'<div class="mut" style="padding:50px 0;text-align:center">⏳ Loading…</div>'}
   function nm(k){var s=ready&&BS.imgs[k];return esc((s&&s.n)||nameOf(k))}
-  var h='';
+  var h='<div class="mut" style="text-align:center;font-size:18px">'+exOf(G.word)+' '+esc(G.word)+'</div>';
   if(R.w)h+='<h1>🏆 '+nm(R.w)+' jeet gaya!</h1><div class="card" style="border:2px solid var(--yel)">'+im(R.w)+'<div style="margin-top:8px"><b>Score: '+(R.sc[R.w]||0)+'/10</b></div>'+(R.c?'<p>'+esc(R.c)+'</p>':'')+'</div>';
   else h+='<h1>Kisi ne drawing nahi di 😅</h1>';
   if(ids.length)h+='<h2>Sab ki drawings</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+ids.map(function(k,i){return'<div class="card" style="padding:8px;margin:0">'+im(k)+'<div style="display:flex;justify-content:space-between;gap:6px;margin-top:6px"><b>'+(i+1)+'. '+nm(k)+'</b><b>'+(R.sc[k]||0)+'/10</b></div></div>'}).join("")+'</div>';
@@ -663,14 +678,14 @@ function bResult(){
   h+=(isHost?btPick()+'<button class="btn" onclick="startBattle()">🔁 Next round (naya word)</button><br>':'<p class="mut" style="text-align:center">Host agla round shuru karega…</p>')+'<button class="btn alt" onclick="leave()">Home</button>';
   return h}
 function render(){
-  var app=$("#app"),gi=$("#gi"),v=gi?gi.value:"",f=gi&&document.activeElement===gi,h;
+  var app=$("#app"),gi=$("#gi"),v=gi?gi.value:"",f=gi&&document.activeElement===gi,h,lk=!!(me&&room&&G&&G.phase==="play"&&G.game==="battle"&&G.stage==="draw");
   if(!me)h=vLogin();
   else if(!room)h=tab==="fr"?vFriends():tab==="me"?vMe():vHome();
   else if(!G||G.phase==="lobby")h=vLobby();
   else if(G.phase==="end")h=vEnd();
-  else{h='<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>'+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():G.game==="battle"?vBattle():vEmoji())}
+  else{h=(lk?'':'<div class="top"><button class="btn sm alt" onclick="leave()">✕</button><span>'+GAMES[G.game].e+' '+GAMES[G.game].n+'</span><span></span></div>')+(G.game==="draw"?vDraw():G.game==="wyr"?vWyr():G.game==="chain"?vChain():G.game==="who"?vWho():G.game==="battle"?vBattle():vEmoji())}
   if(me)h+=popups();
-  app.innerHTML=h;
+  app.innerHTML=h;document.documentElement.classList.toggle("bl",lk);
   var ch=$("#cvh");if(ch){ensureCv();ch.appendChild(cv);if(G.round!==lastRound){strokes=[];cx.clearRect(0,0,600,600);lastRound=G.round}}
   var bh=$("#bch");if(bh){ensureB();bh.appendChild(bcv);if(BS.crid!==G.rid){bStrokes=[];bcx.clearRect(0,0,600,600);BS.crid=G.rid}}
   if(G&&G.phase==="lobby")lastRound=-9;
