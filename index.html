@@ -38,6 +38,16 @@ canvas{width:100%;aspect-ratio:1;background:#fff;border-radius:22px;touch-action
 .ex{font-size:46px;line-height:1;background:#222;border:2px solid #333;border-radius:18px;padding:8px 12px;min-width:66px;text-align:center}.exr{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px}
 .step{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0}.step button{width:46px;height:46px;border:0;border-radius:50%;background:#262626;color:#fff;font-size:26px;font-weight:800}.step b{font-size:34px;min-width:110px;text-align:center;color:var(--lime)}
 @keyframes pin{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.drawbar{position:fixed;left:10px;right:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#111c;backdrop-filter:blur(8px);border-radius:16px;padding:7px 10px}
+.drawbar .wtxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-pal{flex:0 0 auto;width:40px;height:40px;border:2px solid #fff5;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px #0007;cursor:pointer}
+.rc-pal:hover{transform:scale(1.1)}
+#cvh{position:fixed;left:10px;right:10px;top:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:calc(62px + env(safe-area-inset-top,0px)) 0 calc(104px + env(safe-area-inset-bottom,0px));z-index:1;pointer-events:none}
+#cvh canvas{width:auto;height:100%;max-width:100%;pointer-events:auto;box-shadow:0 10px 30px #0008}
+.drawbottom{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:2;background:#111c;backdrop-filter:blur(8px);border-radius:16px;padding:8px 10px;max-height:32vh;overflow:auto}
+.drawbottom .row{margin:0 0 6px}
+.drawbottom .log{font-size:12px;max-height:70px;overflow:auto}
+.drawbar,.rc-pal,.drawbottom{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 </style></head><body><div id="app"></div><div id="ov"></div><div id="inv"></div>
 <script>
 var $=function(s){return document.querySelector(s)};
@@ -445,8 +455,13 @@ function guessBox(){return G.solved?"":'<div class="row"><input id="gi" placehol
 function gGuard(i){if(!G||G.game!=="draw"){i._p=i.value;return}var p=i._p||"";if(i.value.length-p.length>2){i.value=p;return}i._p=i.value}
 function sendG(){var i=$("#gi");if(!i||!i.value.trim())return;var v=i.value;i.value="";i._p="";act({t:G.game==="chain"?"word":"guess",v:v})}
 function result(ans){if(!G.solved)return"";return G.solved.id?'<div class="ok">✅ '+esc(nameOf(G.solved.id))+' got it! It was “'+esc(ans)+'”</div>':'<div class="ok" style="color:#ff8a7a">⏰ Time’s up! It was “'+esc(ans)+'”</div>'}
+var toolsOpen=false;function toggleTools(){toolsOpen=!toolsOpen;render()}
 function vDraw(){var d=G.drawer===myId;
-  return head()+'<div class="card"><div class="mut">'+(d?"You are drawing":esc(nameOf(G.drawer))+" is drawing")+' · '+dtag()+'</div>'+(d||G.solved?'<div class="exr">'+exBox(G.word)+'<div class="mask">'+esc(G.word)+'</div></div>':'<div class="mask">'+G.word.replace(/./g,"_ ").trim()+'</div>')+'</div><div id="cvh"></div>'+(d&&!G.solved?tools():"")+result(G.word)+(d?"":guessBox())+'<div class="log">'+G.log.map(esc).join("<br>")+'</div>'}
+  var wordDisp=(d||G.solved)?('<div class="exr" style="margin:2px 0 0;justify-content:flex-start"><div class="ex" style="font-size:26px;padding:3px 8px;min-width:40px">'+exOf(G.word)+'</div><div class="mask" style="font-size:17px;margin:0">'+esc(G.word)+'</div></div>'):('<div class="mask" style="font-size:17px;margin:2px 0 0">'+G.word.replace(/./g,"_ ").trim()+'</div>');
+  var bar='<div class="drawbar"><div class="wtxt"><span class="mut" style="font-size:11px">'+(d?"You are drawing · "+dtag():esc(nameOf(G.drawer))+" is drawing")+'</span>'+wordDisp+'</div><span class="tm" id="tm" style="font-size:12px;padding:4px 10px;white-space:nowrap">…</span>'+(d&&!G.solved?'<button class="rc-pal" onclick="toggleTools()" title="Colors & tools">🎨</button>':'')+'</div>';
+  var panel=(d&&!G.solved&&toolsOpen)?'<div class="pop" onclick="if(event.target===this)toggleTools()"><div class="card" style="max-height:78vh;overflow:auto;width:min(94%,420px)"><h2 style="margin-top:0">🎨 Tools</h2>'+tools()+'<button class="btn alt" style="margin-top:10px" onclick="toggleTools()">Done</button></div></div>':'';
+  var bottom='<div class="drawbottom">'+result(G.word)+(d?"":guessBox())+'<div class="log">'+G.log.map(esc).join("<br>")+'</div></div>';
+  return bar+'<div id="cvh"></div>'+panel+bottom}
 function vWyr(){var q=G.q,my=G.votes[myId],n=players().length,a=0,b=0,k;for(k in G.votes){G.votes[k]==="A"?a++:b++}var tot=a+b||1;
   function o(v,i,c){var pc=Math.round((v==="A"?a:b)/tot*100),who=players().filter(function(p){return G.votes[p.id]===v}).map(function(p){return p.emoji}).join(" ");
     return'<button class="opt" style="background:'+c+(my===v?";outline:4px solid #fff":"")+'" '+(my||G.reveal?"disabled":"")+' onclick="act({t:\'vote\',v:\''+v+'\'})">'+(G.reveal?'<div class="f" style="width:'+pc+'%"></div>':"")+'<span>'+esc(q[i])+(G.reveal?" · "+pc+"%<br>"+who:"")+'</span></button>'}
